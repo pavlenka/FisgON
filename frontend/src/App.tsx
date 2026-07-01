@@ -3,9 +3,18 @@ import { useAuth } from "./auth";
 import LoginPage from "./pages/LoginPage";
 import FeedPage from "./pages/FeedPage";
 import SourcesPage from "./pages/SourcesPage";
+import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
-  const { token, logout } = useAuth();
+  const { token, user, loading, logout } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="auth-screen">
+        <p className="muted">Cargando…</p>
+      </div>
+    );
+  }
 
   if (!token) return <LoginPage />;
 
@@ -16,6 +25,8 @@ export default function App() {
         <nav>
           <Link to="/">Noticias</Link>
           <Link to="/fuentes">Fuentes</Link>
+          <Link to="/dashboard">Dashboard</Link>
+          {user && <span className="user-name">{user.name}</span>}
           <button className="link-btn" onClick={logout}>
             Salir
           </button>
@@ -25,6 +36,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<FeedPage />} />
           <Route path="/fuentes" element={<SourcesPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

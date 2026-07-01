@@ -10,7 +10,11 @@ export default function SourcesPage() {
   const [detected, setDetected] = useState<DetectResult | null>(null);
   const [name, setName] = useState("");
   const [topics, setTopics] = useState("");
+  const [maxAgeDays, setMaxAgeDays] = useState(7);
   const [err, setErr] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState(7);
 
   const detectMut = useMutation({
     mutationFn: () => api.detect(url),
@@ -30,12 +34,14 @@ export default function SourcesPage() {
         feed_url: detected!.feed_url,
         name,
         topics,
+        max_age_days: maxAgeDays,
       }),
     onSuccess: () => {
       setUrl("");
       setDetected(null);
       setName("");
       setTopics("");
+      setMaxAgeDays(7);
       setErr(null);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
     },
@@ -50,6 +56,15 @@ export default function SourcesPage() {
   const toggleMut = useMutation({
     mutationFn: (s: Source) => api.updateSource(s.id, { active: !s.active }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sources"] }),
+  });
+
+  const updateAgeMut = useMutation({
+    mutationFn: ({ id, max_age_days }: { id: number; max_age_days: number }) =>
+      api.updateSource(id, { max_age_days }),
+    onSuccess: () => {
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["sources"] });
+    },
   });
 
   return (
@@ -79,6 +94,16 @@ export default function SourcesPage() {
               Temas (separados por coma)
               <input value={topics} onChange={(e) => setTopics(e.target.value)} />
             </label>
+            <label>
+              Días de antigüedad máxima
+              <input
+                type="number"
+                min={1}
+                max={365}
+                value={maxAgeDays}
+                onChange={(e) => setMaxAgeDays(Number(e.target.value))}
+              />
+            </label>
             <p className="muted">Solo se mostrarán noticias sobre estos temas. Feed: {detected.feed_url}</p>
             <button onClick={() => createMut.mutate()} disabled={!topics.trim() || createMut.isPending}>
               {createMut.isPending ? "Guardando…" : "Guardar web"}
@@ -95,6 +120,40 @@ export default function SourcesPage() {
             <div className="source-info">
               <div className="source-name">{s.name}</div>
               <div className="muted">{s.topics}</div>
+              {editingId === s.id ? (
+                <div className="row age-edit">
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={editValue}
+                    onChange={(e) => setEditValue(Number(e.target.value))}
+                  />
+                  <button
+                    onClick={() => updateAgeMut.mutate({ id: s.id, max_age_days: editValue })}
+                    disabled={updateAgeMut.isPending}
+                  >
+                    {updateAgeMut.isPending ? "Guardando…" : "Guardar"}
+                  </button>
+                  <button className="link-btn" onClick={() => setEditingId(null)}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <div className="muted">
+                  Últimos {s.max_age_days} días
+                  {" · "}
+                  <button
+                    className="link-btn"
+                    onClick={() => {
+                      setEditingId(s.id);
+                      setEditValue(s.max_age_days);
+                    }}
+                  >
+                    Editar
+                  </button>
+                </div>
+              )}
             </div>
             <div className="source-actions">
               <button onClick={() => toggleMut.mutate(s)}>{s.active ? "Desactivar" : "Activar"}</button>

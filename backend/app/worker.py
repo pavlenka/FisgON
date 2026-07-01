@@ -5,8 +5,9 @@ reprocesarlas; el feed ya filtra por on_topic + umbral. Mantiene un pequeño
 estado en memoria por usuario para que el frontend muestre el progreso.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from . import ingest, llm
@@ -28,7 +29,15 @@ def process_source(session: Session, source: Source) -> int:
     """Procesa una fuente y devuelve cuántas noticias nuevas se han guardado."""
     new_count = 0
     entries = ingest.fetch_entries(source.feed_url, settings.max_entries_per_source)
+    cutoff = datetime.utcnow() - timedelta(days=source.max_age_days)
+
     for entry in entries:
+        # Fuera de la ventana de retención de esta fuente: no se ingiere (no borra
+        # ni oculta lo que ya estuviera guardado). Corte barato en memoria, antes
+        # de ir a BD.
+        if entry["published"] < cutoff:
+            continue
+
         already = session.exec(
             select(Article).where(
                 Article.source_id == source.id,
@@ -40,7 +49,14 @@ def process_source(session: Session, source: Source) -> int:
 
         article_data = ingest.extract_article(entry["link"])
         text = article_data["text"] or entry["summary"]
-        analysis = llm.analyze_article(source.topics, entry["title"], text)
+        analysis = llm.analyze_article(
+            source.topics,
+            entry["title"],
+            text,
+            session=session,
+            user_id=source.user_id,
+            source_id=source.id,
+        )
         # El feed prioriza la imagen del propio feed; si no trae, usamos el og:image.
         image_url = entry["image"] or article_data["image"]
 
@@ -58,7 +74,19 @@ def process_source(session: Session, source: Source) -> int:
                 published_at=entry["published"],
             )
         )
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            # Colisión de uq_source_guid a nivel de BD (p.ej. dos refrescos
+            # solapados del mismo usuario). Se trata igual que "ya existía":
+            # se descarta sin romper el resto de fuentes de esta pasada.
+            session.rollback()
+            log.info(
+                "Guid duplicado a nivel de BD para la fuente %s (%s); se ignora",
+                source.id,
+                entry["guid"],
+            )
+            continue
         new_count += 1
 
     source.last_fetched_at = datetime.utcnow()
@@ -79,6 +107,9 @@ def process_user_sources(user_id: int) -> int:
                 total += process_source(session, source)
             except Exception:  # noqa: BLE001 - una fuente rota no debe parar el resto
                 log.exception("Error procesando la fuente %s (%s)", source.id, source.name)
+                # Deja la sesión limpia para que la siguiente fuente de este mismo
+                # lote no herede una transacción fallida.
+                session.rollback()
     return total
 
 

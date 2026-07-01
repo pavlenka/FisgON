@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { api, clearToken, getToken, setToken } from "./api";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { api, clearToken, getToken, setToken, setUnauthorizedHandler, type AuthUser } from "./api";
 
 interface AuthContextValue {
   token: string | null;
+  user: AuthUser | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -14,23 +16,48 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTok] = useState<string | null>(getToken());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(() => !!getToken());
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setTok(null);
+      setUser(null);
+    });
+
+    if (getToken()) {
+      api
+        .me()
+        .then(setUser)
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   const login = async (email: string, password: string) => {
     const res = await api.login(email, password);
     setToken(res.access_token);
     setTok(res.access_token);
+    setUser(await api.me());
   };
 
-  const register = async (email: string, password: string) => {
-    const res = await api.register(email, password);
+  const register = async (email: string, password: string, name: string) => {
+    const res = await api.register(email, password, name);
     setToken(res.access_token);
     setTok(res.access_token);
+    setUser(await api.me());
   };
 
   const logout = () => {
     clearToken();
     setTok(null);
+    setUser(null);
   };
 
-  return <AuthContext.Provider value={{ token, login, register, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ token, user, loading, login, register, logout }}>{children}</AuthContext.Provider>
+  );
 }

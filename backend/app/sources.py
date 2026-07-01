@@ -25,6 +25,7 @@ router = APIRouter(prefix="/sources", tags=["sources"])
 def detect_source(
     req: SourceDetectRequest,
     user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ) -> SourceDetectResponse:
     """Descubre el feed de una web y sugiere su tema (editable por el usuario)."""
     info = ingest.discover_feed(req.url)
@@ -35,7 +36,7 @@ def detect_source(
         )
     entries = ingest.fetch_entries(info["feed_url"], 12)
     titles = [e["title"] for e in entries if e["title"]]
-    topics = llm.detect_topics(info["name"], titles)
+    topics = llm.detect_topics(info["name"], titles, session=session, user_id=user.id)
     return SourceDetectResponse(
         site_url=info["site_url"],
         feed_url=info["feed_url"],
@@ -63,12 +64,14 @@ def create_source(
 ) -> Source:
     if not data.topics.strip():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Indica al menos un tema")
+    _validate_max_age_days(data.max_age_days)
     source = Source(
         user_id=user.id,
         site_url=data.site_url,
         feed_url=data.feed_url,
         name=data.name,
         topics=data.topics.strip(),
+        max_age_days=data.max_age_days,
     )
     session.add(source)
     session.commit()
@@ -76,6 +79,13 @@ def create_source(
     # Procesamos ya las noticias de esta fuente (y del resto) en segundo plano.
     background.add_task(worker.refresh_user, user.id)
     return source
+
+
+def _validate_max_age_days(days: int) -> None:
+    if days < 1:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días debe ser al menos 1")
+    if days > 365:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días no puede superar 365")
 
 
 def _get_owned_source(source_id: int, user: User, session: Session) -> Source:
@@ -99,6 +109,9 @@ def update_source(
         source.topics = data.topics.strip()
     if data.active is not None:
         source.active = data.active
+    if data.max_age_days is not None:
+        _validate_max_age_days(data.max_age_days)
+        source.max_age_days = data.max_age_days
     session.add(source)
     session.commit()
     session.refresh(source)

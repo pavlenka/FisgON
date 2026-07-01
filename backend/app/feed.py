@@ -94,7 +94,15 @@ def expand_article(
         return ExpandedSummary(summary=article.extended_summary)
 
     article_data = ingest.extract_article(article.link)
-    extended = llm.expand_summary(source.topics, article.original_title, article_data["text"])
+    extended = llm.expand_summary(
+        source.topics,
+        article.original_title,
+        article_data["text"],
+        session=session,
+        user_id=user.id,
+        source_id=source.id,
+        article_id=article.id,
+    )
     article.extended_summary = extended
     session.add(article)
     session.commit()

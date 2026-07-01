@@ -7,6 +7,18 @@ from pydantic import BaseModel
 class UserCreate(BaseModel):
     email: str
     password: str
+    name: str
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    name: str
 
 
 class Token(BaseModel):
@@ -30,12 +42,14 @@ class SourceCreate(BaseModel):
     feed_url: str
     name: str
     topics: str
+    max_age_days: int = 7
 
 
 class SourceUpdate(BaseModel):
     name: str | None = None
     topics: str | None = None
     active: bool | None = None
+    max_age_days: int | None = None
 
 
 class SourceOut(BaseModel):
@@ -45,6 +59,7 @@ class SourceOut(BaseModel):
     name: str
     topics: str
     active: bool
+    max_age_days: int
     last_fetched_at: datetime | None
 
 
@@ -67,3 +82,43 @@ class FeedPage(BaseModel):
 
 class ExpandedSummary(BaseModel):
     summary: str
+
+
+class ApiCallLogOut(BaseModel):
+    id: int
+    kind: str
+    provider: str
+    model: str
+    source_id: int | None
+    article_id: int | None
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    total_tokens: int | None
+    cost: float | None
+    duration_ms: int | None
+    success: bool
+    error: str | None
+    created_at: datetime
+
+
+class ApiCallLogPage(BaseModel):
+    items: list[ApiCallLogOut]
+    next_cursor: str | None = None
+
+
+class KindBreakdown(BaseModel):
+    kind: str
+    calls: int
+    total_tokens: int
+    cost: float
+
+
+class DashboardSummary(BaseModel):
+    total_calls: int
+    total_prompt_tokens: int
+    total_completion_tokens: int
+    total_tokens: int
+    total_cost: float
+    success_count: int
+    error_count: int
+    by_kind: list[KindBreakdown]

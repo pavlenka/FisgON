@@ -6,15 +6,21 @@ intercambiables vía LLM_PROVIDER:
   - "ollama": modelo local (por defecto, para desarrollo).
   - "opencode": API OpenAI-compatible de OpenCode Go, para entornos sin Ollama
     (p.ej. un VPS de despliegue).
+
+Cada llamada se registra en ApiCallLog (dashboard de uso/coste) desde el único
+punto de paso común, _chat().
 """
 import json
 import logging
 import re
+import time
 
 import httpx
 from ollama import Client
+from sqlmodel import Session
 
 from .config import settings
+from .models import ApiCallLog
 
 log = logging.getLogger("fisgon.llm")
 
@@ -27,43 +33,174 @@ def _strip_code_fence(text: str) -> str:
     return match.group(1) if match else text
 
 
-def _chat(system: str, user: str, *, json_mode: bool) -> str:
-    """Llama al proveedor configurado y devuelve el texto de la respuesta."""
-    if settings.llm_provider == "opencode":
-        with httpx.Client(timeout=90.0) as client:
-            payload = {
-                "model": settings.opencode_model,
-                "messages": [
+def _log_call(
+    session: Session,
+    *,
+    user_id: int,
+    kind: str,
+    provider: str,
+    model: str,
+    source_id: int | None,
+    article_id: int | None,
+    prompt_tokens: int | None,
+    completion_tokens: int | None,
+    total_tokens: int | None,
+    cost: float | None,
+    duration_ms: int,
+    success: bool,
+    error: str | None,
+) -> None:
+    """Guarda una fila del dashboard de uso. Nunca debe romper la llamada real."""
+    try:
+        session.add(
+            ApiCallLog(
+                user_id=user_id,
+                kind=kind,
+                provider=provider,
+                model=model,
+                source_id=source_id,
+                article_id=article_id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                cost=cost,
+                duration_ms=duration_ms,
+                success=success,
+                error=error,
+            )
+        )
+        session.commit()
+    except Exception:  # noqa: BLE001 - registrar el uso nunca debe tumbar la llamada real
+        log.exception("No se pudo registrar la llamada a la IA en el dashboard")
+        session.rollback()
+
+
+def _chat(
+    system: str,
+    user: str,
+    *,
+    json_mode: bool,
+    session: Session,
+    user_id: int,
+    kind: str,
+    source_id: int | None = None,
+    article_id: int | None = None,
+) -> str:
+    """Llama al proveedor configurado, registra la llamada y devuelve el texto."""
+    provider = settings.llm_provider
+    model = settings.opencode_model if provider == "opencode" else settings.ollama_model
+    started = time.monotonic()
+
+    try:
+        if provider == "opencode":
+            with httpx.Client(timeout=90.0) as client:
+                payload = {
+                    "model": settings.opencode_model,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    "temperature": 0.2,
+                }
+                if json_mode:
+                    payload["response_format"] = {"type": "json_object"}
+                resp = client.post(
+                    f"{settings.opencode_base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {settings.opencode_api_key}"},
+                    json=payload,
+                )
+                resp.raise_for_status()
+                resp_json = resp.json()
+                content = resp_json["choices"][0]["message"]["content"]
+                usage = resp_json.get("usage") or {}
+                prompt_tokens = usage.get("prompt_tokens")
+                completion_tokens = usage.get("completion_tokens")
+                total_tokens = usage.get("total_tokens")
+                cost_raw = resp_json.get("cost")
+                try:
+                    cost = float(cost_raw) if cost_raw is not None else None
+                except (TypeError, ValueError):
+                    cost = None
+        else:
+            resp = _ollama_client.chat(
+                model=settings.ollama_model,
+                messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
-                "temperature": 0.2,
-            }
-            if json_mode:
-                payload["response_format"] = {"type": "json_object"}
-            resp = client.post(
-                f"{settings.opencode_base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {settings.opencode_api_key}"},
-                json=payload,
+                format="json" if json_mode else None,
+                options={"temperature": 0.2},
             )
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            content = resp["message"]["content"]
+            prompt_tokens = resp.get("prompt_eval_count")
+            completion_tokens = resp.get("eval_count")
+            total_tokens = (
+                prompt_tokens + completion_tokens
+                if prompt_tokens is not None and completion_tokens is not None
+                else None
+            )
+            cost = None
+    except Exception as exc:  # noqa: BLE001 - se registra el fallo y se relanza
+        duration_ms = int((time.monotonic() - started) * 1000)
+        _log_call(
+            session,
+            user_id=user_id,
+            kind=kind,
+            provider=provider,
+            model=model,
+            source_id=source_id,
+            article_id=article_id,
+            prompt_tokens=None,
+            completion_tokens=None,
+            total_tokens=None,
+            cost=None,
+            duration_ms=duration_ms,
+            success=False,
+            error=str(exc)[:500],
+        )
+        raise
 
-    resp = _ollama_client.chat(
-        model=settings.ollama_model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        format="json" if json_mode else None,
-        options={"temperature": 0.2},
+    duration_ms = int((time.monotonic() - started) * 1000)
+    _log_call(
+        session,
+        user_id=user_id,
+        kind=kind,
+        provider=provider,
+        model=model,
+        source_id=source_id,
+        article_id=article_id,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        cost=cost,
+        duration_ms=duration_ms,
+        success=True,
+        error=None,
     )
-    return resp["message"]["content"]
+    return content
 
 
-def _chat_json(system: str, user: str) -> dict:
+def _chat_json(
+    system: str,
+    user: str,
+    *,
+    session: Session,
+    user_id: int,
+    kind: str,
+    source_id: int | None = None,
+    article_id: int | None = None,
+) -> dict:
     """Llama al modelo forzando JSON y devuelve el dict parseado ({} si falla)."""
-    content = _chat(system, user, json_mode=True)
+    content = _chat(
+        system,
+        user,
+        json_mode=True,
+        session=session,
+        user_id=user_id,
+        kind=kind,
+        source_id=source_id,
+        article_id=article_id,
+    )
     try:
         return json.loads(_strip_code_fence(content))
     except (json.JSONDecodeError, TypeError):
@@ -77,7 +214,7 @@ DETECT_SYSTEM = (
 )
 
 
-def detect_topics(name: str, sample_titles: list[str]) -> str:
+def detect_topics(name: str, sample_titles: list[str], *, session: Session, user_id: int) -> str:
     """Devuelve el/los tema(s) de una web como cadena separada por comas."""
     titles = "\n".join(f"- {t}" for t in sample_titles[:15]) or "(sin titulares)"
     user = (
@@ -86,7 +223,7 @@ def detect_topics(name: str, sample_titles: list[str]) -> str:
         "por ejemplo: motor, tecnología, política, deportes, moda, videojuegos).\n"
         'Responde SOLO JSON con esta forma: {"topics": ["tema1", "tema2"]}'
     )
-    data = _chat_json(DETECT_SYSTEM, user)
+    data = _chat_json(DETECT_SYSTEM, user, session=session, user_id=user_id, kind="detect_topics")
     topics = data.get("topics")
     if isinstance(topics, list) and topics:
         return ", ".join(str(t).strip().lower() for t in topics if str(t).strip())
@@ -103,7 +240,9 @@ ANALYZE_SYSTEM = (
 )
 
 
-def analyze_article(topics: str, title: str, text: str) -> dict:
+def analyze_article(
+    topics: str, title: str, text: str, *, session: Session, user_id: int, source_id: int
+) -> dict:
     """Analiza una noticia y devuelve
     {on_topic: bool, interesting: int(1-10), title: str, summary: str}.
 
@@ -126,7 +265,9 @@ def analyze_article(topics: str, title: str, text: str) -> dict:
         "}\n"
         "Donde interesting va de 1 (irrelevante) a 10 (imprescindible)."
     )
-    data = _chat_json(ANALYZE_SYSTEM, user)
+    data = _chat_json(
+        ANALYZE_SYSTEM, user, session=session, user_id=user_id, kind="analyze_article", source_id=source_id
+    )
 
     try:
         interesting = int(data.get("interesting", 0))
@@ -153,7 +294,9 @@ EXPAND_SYSTEM = (
 )
 
 
-def expand_summary(topics: str, title: str, text: str) -> str:
+def expand_summary(
+    topics: str, title: str, text: str, *, session: Session, user_id: int, source_id: int, article_id: int
+) -> str:
     """Resumen más largo (varias frases/párrafos) para quien quiere más detalle sin
     leer el artículo original. No usa JSON: es texto libre."""
     body = (text or "").strip()[: settings.article_max_chars] or "(sin contenido extraído)"
@@ -164,4 +307,13 @@ def expand_summary(topics: str, title: str, text: str) -> str:
         "Escribe un resumen extenso (6-10 frases, puede ser en dos párrafos) que permita "
         "entender la noticia en profundidad sin tener que abrir el artículo original."
     )
-    return _chat(EXPAND_SYSTEM, user, json_mode=False).strip()
+    return _chat(
+        EXPAND_SYSTEM,
+        user,
+        json_mode=False,
+        session=session,
+        user_id=user_id,
+        kind="expand_summary",
+        source_id=source_id,
+        article_id=article_id,
+    ).strip()

@@ -113,6 +113,8 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
   padding: 0.8rem 1.2rem;
   background: rgba(15, 17, 21, 0.9);
   backdrop-filter: blur(8px);
@@ -125,7 +127,8 @@ input:focus {
 .topbar nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
 }
 .topbar nav a {
   color: var(--text);
@@ -134,6 +137,10 @@ input:focus {
 }
 .topbar nav a:hover {
   color: var(--accent);
+}
+.topbar nav .user-name {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 .content {
   max-width: 720px;
@@ -258,4 +265,62 @@ input:focus {
 h2 {
   font-size: 1.05rem;
   margin: 0 0 0.8rem;
+}
+h3 {
+  font-size: 0.95rem;
+  margin: 0 0 0.7rem;
+}
+
+/* ---------- Sources: edición inline de retención ---------- */
+.age-edit {
+  margin-top: 0.4rem;
+}
+.age-edit input {
+  width: 5rem;
+}
+
+/* ---------- Dashboard ---------- */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+.stat-card .stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.stat-card .stat-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.calls-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.calls-table th,
+.calls-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.calls-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+.calls-table tr.call-error td {
+  color: var(--danger);
+}
+.dashboard .card {
+  margin-bottom: 1rem;
+  overflow-x: auto;
 }
