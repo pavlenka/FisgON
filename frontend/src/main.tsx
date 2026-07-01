@@ -10,11 +10,17 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
 
+// En local BASE_URL es "/" (sin basename); en producción es "/fisgon/"
+// (compilado con --base=/fisgon/) y React Router necesita saberlo, si no
+// cualquier ruta que no sea exactamente "/" cae en el catch-all y te manda
+// a la raíz del dominio en vez de a "/fisgon/".
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <App />
         </BrowserRouter>
       </AuthProvider>
