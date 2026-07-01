@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ollama --version)",
+      "Bash(ollama list *)",
+      "Bash(docker --version)"
+    ]
+  }
+}
