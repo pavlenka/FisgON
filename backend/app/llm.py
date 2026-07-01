@@ -1,34 +1,71 @@
-"""Capa de IA sobre Ollama: detección de tema y análisis anti-clickbait.
+"""Capa de IA: detección de tema y análisis anti-clickbait.
 
 Todo el razonamiento (¿es del tema?, ¿es interesante?, resumen honesto) lo hace
-un único modelo local vía Ollama, forzando salida JSON para respuestas estables.
+un modelo, forzando salida JSON para respuestas estables. Soporta dos proveedores
+intercambiables vía LLM_PROVIDER:
+  - "ollama": modelo local (por defecto, para desarrollo).
+  - "opencode": API OpenAI-compatible de OpenCode Go, para entornos sin Ollama
+    (p.ej. un VPS de despliegue).
 """
 import json
 import logging
+import re
 
+import httpx
 from ollama import Client
 
 from .config import settings
 
 log = logging.getLogger("fisgon.llm")
 
-_client = Client(host=settings.ollama_host)
+_ollama_client = Client(host=settings.ollama_host)
 
 
-def _chat_json(system: str, user: str) -> dict:
-    """Llama al modelo forzando JSON y devuelve el dict parseado ({} si falla)."""
-    resp = _client.chat(
+def _strip_code_fence(text: str) -> str:
+    """Algunos modelos envuelven el JSON en ```json ... ```; lo quitamos si aparece."""
+    match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    return match.group(1) if match else text
+
+
+def _chat(system: str, user: str, *, json_mode: bool) -> str:
+    """Llama al proveedor configurado y devuelve el texto de la respuesta."""
+    if settings.llm_provider == "opencode":
+        with httpx.Client(timeout=90.0) as client:
+            payload = {
+                "model": settings.opencode_model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "temperature": 0.2,
+            }
+            if json_mode:
+                payload["response_format"] = {"type": "json_object"}
+            resp = client.post(
+                f"{settings.opencode_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {settings.opencode_api_key}"},
+                json=payload,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+
+    resp = _ollama_client.chat(
         model=settings.ollama_model,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        format="json",
+        format="json" if json_mode else None,
         options={"temperature": 0.2},
     )
-    content = resp["message"]["content"]
+    return resp["message"]["content"]
+
+
+def _chat_json(system: str, user: str) -> dict:
+    """Llama al modelo forzando JSON y devuelve el dict parseado ({} si falla)."""
+    content = _chat(system, user, json_mode=True)
     try:
-        return json.loads(content)
+        return json.loads(_strip_code_fence(content))
     except (json.JSONDecodeError, TypeError):
         log.warning("Respuesta no-JSON del modelo: %r", content[:200])
         return {}
@@ -127,12 +164,4 @@ def expand_summary(topics: str, title: str, text: str) -> str:
         "Escribe un resumen extenso (6-10 frases, puede ser en dos párrafos) que permita "
         "entender la noticia en profundidad sin tener que abrir el artículo original."
     )
-    resp = _client.chat(
-        model=settings.ollama_model,
-        messages=[
-            {"role": "system", "content": EXPAND_SYSTEM},
-            {"role": "user", "content": user},
-        ],
-        options={"temperature": 0.3},
-    )
-    return resp["message"]["content"].strip()
+    return _chat(EXPAND_SYSTEM, user, json_mode=False).strip()

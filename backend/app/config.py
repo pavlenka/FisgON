@@ -5,9 +5,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Proveedor de IA: "ollama" (local) u "opencode" (API OpenAI-compatible, para
+    # despliegues donde no hay Ollama disponible, p.ej. un VPS).
+    llm_provider: str = "ollama"
+
     # Ollama
     ollama_host: str = "http://localhost:11434"
     ollama_model: str = "gemma4:latest"
+
+    # OpenCode Go (https://opencode.ai/docs/go/) — API OpenAI-compatible
+    opencode_base_url: str = "https://opencode.ai/zen/go/v1"
+    opencode_api_key: str | None = None
+    opencode_model: str = "deepseek-v4-flash"
 
     # Seguridad / JWT
     jwt_secret: str = "cambia-esta-clave-por-una-larga-y-aleatoria"

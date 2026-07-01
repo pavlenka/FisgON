@@ -69,8 +69,11 @@ Si el backend corre en otro puerto: `VITE_API_PROXY=http://localhost:8010 npm ru
 
 | Variable | Por defecto | Descripción |
 |---|---|---|
+| `LLM_PROVIDER` | `ollama` | `ollama` (local) u `opencode` (API remota, para desplegar donde no hay Ollama) |
 | `OLLAMA_HOST` | `http://localhost:11434` | Dónde escucha Ollama |
 | `OLLAMA_MODEL` | `gemma4:latest` | Modelo para clasificar/resumir (alternativa: `gpt-oss:latest`) |
+| `OPENCODE_API_KEY` | *(vacío)* | Clave de [OpenCode Go](https://opencode.ai/docs/go/), solo si `LLM_PROVIDER=opencode` |
+| `OPENCODE_MODEL` | `deepseek-v4-flash` | Modelo económico por defecto en OpenCode Go |
 | `JWT_SECRET` | *(cámbialo)* | Clave para firmar los tokens |
 | `INTERESTING_THRESHOLD` | `6` | Puntuación mínima (1-10) para mostrar una noticia |
 | `POLL_MINUTES` | `20` | Cada cuánto refresca las fuentes en segundo plano |
