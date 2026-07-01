@@ -1,5 +1,6 @@
-# Despliegue de producción para fisgon.prasoft.es, enganchado a la red
-# Traefik ya existente en el VPS de prasoft.es (ver DEPLOY-README.md de ese repo).
+# Despliegue de producción bajo prasoft.es/fisgon (sin subdominio propio),
+# enganchado a la red Traefik ya existente en el VPS de prasoft.es
+# (ver DEPLOY-README.md de ese repo).
 #
 # Requiere un archivo .env (no versionado) con al menos:
 #   OPENCODE_API_KEY=...
@@ -44,7 +45,10 @@ services:
       - fisgon-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fisgon.rule=Host(`fisgon.prasoft.es`)"
+      # Mismo host que el sitio principal + prefijo de ruta; prioridad explícita
+      # para que gane a la regla más genérica de prasoft-web.
+      - "traefik.http.routers.fisgon.rule=Host(`prasoft.es`) && PathPrefix(`/fisgon`)"
+      - "traefik.http.routers.fisgon.priority=100"
       - "traefik.http.routers.fisgon.entrypoints=web,websecure"
       - "traefik.http.routers.fisgon.tls=true"
       - "traefik.http.routers.fisgon.tls.certresolver=letsencrypt"

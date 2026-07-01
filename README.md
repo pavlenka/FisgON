@@ -95,12 +95,15 @@ de la web y el texto del artículo, y recibe un JSON:
 Se guardan todas las noticias analizadas (también las descartadas, para no reprocesarlas),
 pero el feed solo muestra las que tienen `on_topic = true` e `interesting >= INTERESTING_THRESHOLD`.
 
-## Despliegue (fisgon.prasoft.es)
+## Despliegue (prasoft.es/fisgon)
 
 Incluye `docker-compose.yml` con dos servicios (`fisgon-backend` y `fisgon-frontend`)
 pensado para engancharse a la red Traefik ya existente en el VPS de
 [prasoft.es](https://github.com/pavlenka/prasoft-es-portfolio) (ver su `DEPLOY-README.md`
-para la sección "fisgon.prasoft.es"). En este modo se usa `LLM_PROVIDER=opencode`
+para la sección "prasoft.es/fisgon"). Se sirve **bajo una ruta del dominio principal**
+(`prasoft.es/fisgon`), sin subdominio propio ni DNS aparte: el frontend se compila con
+`--base=/fisgon/` y nginx expone `/fisgon/` + `/fisgon/api/` (reescrito a `/api/` al
+llegar al backend). En este modo se usa `LLM_PROVIDER=opencode`
 ([OpenCode Go](https://opencode.ai/docs/go/)) en vez de Ollama, ya que el VPS no tiene
 un modelo local corriendo.
 

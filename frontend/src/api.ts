@@ -1,5 +1,10 @@
 // Cliente de la API de FisgON. El token JWT se guarda en localStorage y se envía
 // en la cabecera Authorization. Todas las rutas pasan por el proxy /api de Vite.
+//
+// BASE_URL es "/" en local y "/fisgon/" cuando se compila con --base=/fisgon/
+// (despliegue bajo prasoft.es/fisgon), así el cliente pega a la ruta correcta
+// en ambos casos sin configuración aparte.
+const API_BASE = `${import.meta.env.BASE_URL}api`.replace(/\/{2,}/g, "/");
 
 const TOKEN_KEY = "fisgon_token";
 
@@ -15,7 +20,7 @@ async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (res.status === 401) {
     clearToken();
