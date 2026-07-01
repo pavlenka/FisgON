@@ -1,0 +1,51 @@
+# Despliegue de producción para fisgon.prasoft.es, enganchado a la red
+# Traefik ya existente en el VPS de prasoft.es (ver DEPLOY-README.md de ese repo).
+#
+# Requiere un archivo .env (no versionado) con al menos:
+#   OPENCODE_API_KEY=...
+#   FISGON_JWT_SECRET=...
+version: '3.8'
+
+networks:
+  traefik:
+    name: prasoft_traefik
+    external: true
+  fisgon-net:
+    name: fisgon_internal
+
+volumes:
+  fisgon-data:
+
+services:
+  fisgon-backend:
+    build: ./backend
+    container_name: fisgon-backend
+    restart: unless-stopped
+    networks:
+      - fisgon-net
+    volumes:
+      - fisgon-data:/data
+    environment:
+      - LLM_PROVIDER=opencode
+      - OPENCODE_API_KEY=${OPENCODE_API_KEY}
+      - OPENCODE_MODEL=${OPENCODE_MODEL:-deepseek-v4-flash}
+      - JWT_SECRET=${FISGON_JWT_SECRET}
+      - INTERESTING_THRESHOLD=${FISGON_INTERESTING_THRESHOLD:-6}
+      - POLL_MINUTES=${FISGON_POLL_MINUTES:-20}
+
+  fisgon-frontend:
+    build: ./frontend
+    container_name: fisgon-frontend
+    restart: unless-stopped
+    depends_on:
+      - fisgon-backend
+    networks:
+      - traefik
+      - fisgon-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fisgon.rule=Host(`fisgon.prasoft.es`)"
+      - "traefik.http.routers.fisgon.entrypoints=web,websecure"
+      - "traefik.http.routers.fisgon.tls=true"
+      - "traefik.http.routers.fisgon.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fisgon.loadbalancer.server.port=80"

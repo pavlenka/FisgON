@@ -9,5 +9,8 @@ backend/.env
 frontend/node_modules
 frontend/dist
 
+# Despliegue
+.env
+
 # Sistema
 .DS_Store

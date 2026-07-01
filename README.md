@@ -95,6 +95,23 @@ de la web y el texto del artículo, y recibe un JSON:
 Se guardan todas las noticias analizadas (también las descartadas, para no reprocesarlas),
 pero el feed solo muestra las que tienen `on_topic = true` e `interesting >= INTERESTING_THRESHOLD`.
 
+## Despliegue (fisgon.prasoft.es)
+
+Incluye `docker-compose.yml` con dos servicios (`fisgon-backend` y `fisgon-frontend`)
+pensado para engancharse a la red Traefik ya existente en el VPS de
+[prasoft.es](https://github.com/pavlenka/prasoft-es-portfolio) (ver su `DEPLOY-README.md`
+para la sección "fisgon.prasoft.es"). En este modo se usa `LLM_PROVIDER=opencode`
+([OpenCode Go](https://opencode.ai/docs/go/)) en vez de Ollama, ya que el VPS no tiene
+un modelo local corriendo.
+
+```bash
+cp .env.example .env   # rellena OPENCODE_API_KEY y FISGON_JWT_SECRET
+docker compose up -d --build
+```
+
+Requiere que la red externa `prasoft_traefik` ya exista (la crea el `docker-compose.yml`
+principal de prasoft.es).
+
 ## Fuera de alcance (por ahora)
 
 - Deduplicado semántico de una misma noticia entre webs distintas.

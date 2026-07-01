@@ -54,4 +54,5 @@ app.include_router(feed.router, prefix="/api")
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "model": settings.ollama_model}
+    model = settings.opencode_model if settings.llm_provider == "opencode" else settings.ollama_model
+    return {"status": "ok", "provider": settings.llm_provider, "model": model}
