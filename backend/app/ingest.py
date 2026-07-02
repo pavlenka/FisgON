@@ -115,12 +115,20 @@ def discover_feed(raw_url: str) -> dict | None:
 
 
 def _entry_date(entry: feedparser.FeedParserDict) -> datetime:
-    """Fecha de publicación en UTC naive (o ahora si el feed no la trae)."""
+    """Fecha de publicación en UTC naive (o ahora si el feed no la trae).
+
+    Algunas fuentes etiquetan su feed como GMT pero en realidad publican en
+    hora local (p.ej. CEST, UTC+2 en verano), lo que da fechas varias horas
+    en el futuro. Recortamos a "ahora" en ese caso: si no, esa noticia se
+    cuela por delante de otras genuinamente más recientes y rompe el orden
+    cronológico estricto del feed.
+    """
+    now = datetime.utcnow()
     for key in ("published_parsed", "updated_parsed"):
         struct = entry.get(key)
         if struct:
-            return datetime.utcfromtimestamp(calendar.timegm(struct))
-    return datetime.utcnow()
+            return min(datetime.utcfromtimestamp(calendar.timegm(struct)), now)
+    return now
 
 
 def _entry_image(entry: feedparser.FeedParserDict) -> str | None:
