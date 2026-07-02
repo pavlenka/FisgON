@@ -5,19 +5,11 @@ import FeedPage from "./pages/FeedPage";
 import SourcesPage from "./pages/SourcesPage";
 import DashboardPage from "./pages/DashboardPage";
 import AccountPage from "./pages/AccountPage";
+import VerifyPage from "./pages/VerifyPage";
+import ResetPage from "./pages/ResetPage";
 
-export default function App() {
-  const { token, user, loading, logout } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="auth-screen">
-        <p className="muted">Cargando…</p>
-      </div>
-    );
-  }
-
-  if (!token) return <LoginPage />;
+function Shell() {
+  const { user, logout } = useAuth();
 
   return (
     <div className="app">
@@ -49,5 +41,26 @@ export default function App() {
         </Routes>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  const { token, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="auth-screen">
+        <p className="muted">Cargando…</p>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Rutas públicas: llegan desde los enlaces de los correos, sin sesión. */}
+      <Route path="/verificar" element={<VerifyPage />} />
+      <Route path="/restablecer" element={<ResetPage />} />
+      <Route path="*" element={token ? <Shell /> : <LoginPage />} />
+    </Routes>
   );
 }

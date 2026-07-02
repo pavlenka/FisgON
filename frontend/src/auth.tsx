@@ -45,11 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await api.me());
   };
 
+  // El registro ya no inicia sesión: la cuenta queda pendiente hasta que el
+  // usuario verifique su correo con el enlace que le enviamos.
   const register = async (email: string, password: string, name: string) => {
-    const res = await api.register(email, password, name);
-    setToken(res.access_token);
-    setTok(res.access_token);
-    setUser(await api.me());
+    await api.register(email, password, name);
   };
 
   const logout = () => {

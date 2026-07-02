@@ -138,7 +138,21 @@ export interface DashboardSummary {
 export const api = {
   register: (email: string, password: string, name: string) =>
     apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password, name }) }) as Promise<{
-      access_token: string;
+      message: string;
+    }>,
+  verifyEmail: (token: string) =>
+    apiFetch("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }) as Promise<{ message: string }>,
+  resendVerification: (email: string) =>
+    apiFetch("/auth/resend-verification", { method: "POST", body: JSON.stringify({ email }) }) as Promise<{
+      message: string;
+    }>,
+  forgotPassword: (email: string) =>
+    apiFetch("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }) as Promise<{
+      message: string;
+    }>,
+  resetPassword: (token: string, new_password: string) =>
+    apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, new_password }) }) as Promise<{
+      message: string;
     }>,
   login: (email: string, password: string) =>
     apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }) as Promise<{

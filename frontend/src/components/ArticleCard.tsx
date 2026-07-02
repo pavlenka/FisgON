@@ -58,9 +58,6 @@ export default function ArticleCard({ article }: { article: Article }) {
         <span className="source">{article.source_name}</span>
         <span className="dot">·</span>
         <span className="time">{timeAgo(article.published_at)}</span>
-        <span className="stamp" title="Nivel de interés según la IA (1-10)">
-          Interés {article.interesting_score}/10
-        </span>
       </div>
       <h2 className="card-title">{article.title}</h2>
       <p className="card-summary">{article.summary}</p>

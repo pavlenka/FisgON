@@ -16,6 +16,11 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True)
     name: str
     password_hash: str
+    # La cuenta no puede iniciar sesión hasta confirmar el correo.
+    email_verified: bool = False
+    verify_token: str | None = Field(default=None, index=True)
+    reset_token: str | None = Field(default=None, index=True)
+    reset_token_expires: datetime | None = None
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -53,6 +58,9 @@ class Article(SQLModel, table=True):
     image_url: str | None = None
     interesting_score: int  # 1-10
     on_topic: bool
+    # La misma historia ya publicada por otra fuente del usuario: se guarda
+    # (para no reprocesarla) pero no se muestra en el feed.
+    is_duplicate: bool = False
     published_at: datetime = Field(index=True)
     fetched_at: datetime = Field(default_factory=utcnow)
 

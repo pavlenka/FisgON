@@ -277,31 +277,55 @@ def detect_topics(name: str, sample_titles: list[str], *, session: Session, user
 
 ANALYZE_SYSTEM = (
     "Eres un editor de noticias que combate el clickbait. Para cada noticia decides si "
-    "trata realmente sobre el tema indicado, la puntúas por interés informativo y reescribes "
-    "un titular claro y un resumen honesto que le ahorre al lector tener que abrir la noticia. "
+    "trata realmente sobre el tema indicado, si repite una historia ya publicada, la "
+    "puntúas por interés informativo y reescribes un titular claro y un resumen honesto "
+    "que le ahorre al lector tener que abrir la noticia. "
     "Escribes en español y respondes solo JSON."
 )
 
 
 def analyze_article(
-    topics: str, title: str, text: str, *, session: Session, user_id: int, source_id: int
+    topics: str,
+    title: str,
+    text: str,
+    *,
+    session: Session,
+    user_id: int,
+    source_id: int,
+    recent_titles: list[str] | None = None,
 ) -> dict:
     """Analiza una noticia y devuelve
-    {on_topic: bool, interesting: int(1-10), title: str, summary: str}.
+    {on_topic: bool, interesting: int(1-10), duplicate: bool, title: str, summary: str}.
+
+    recent_titles: titulares ya publicados en el feed del usuario; si la noticia
+    cuenta la misma historia que alguno (aunque venga de otra web), se marca como
+    duplicada para no repetirla en el feed.
 
     Ante cualquier fallo devuelve un resultado seguro (on_topic=False) para que la
     noticia quede descartada pero registrada y no se reprocese.
     """
     body = (text or "").strip()[: settings.article_max_chars] or "(sin contenido extraído)"
+    dup_block = ""
+    if recent_titles:
+        listado = "\n".join(f"- {t}" for t in recent_titles)
+        dup_block = (
+            "\nTitulares ya publicados en el feed del usuario estos días:\n"
+            f"{listado}\n"
+            "Si esta noticia cuenta esencialmente la misma historia que alguno de esos "
+            'titulares (aunque cambie la redacción o venga de otra web), pon "duplicada": true. '
+            'Si es una historia distinta, "duplicada": false.\n'
+        )
     user = (
         f"Tema(s) de esta web: {topics}\n"
         "IMPORTANTE: una noticia solo es válida (on_topic=true) si trata sobre esos temas. "
-        "Si va de cualquier otra cosa (aunque la publique la misma web), on_topic=false.\n\n"
+        "Si va de cualquier otra cosa (aunque la publique la misma web), on_topic=false.\n"
+        f"{dup_block}\n"
         f"Titular original: {title}\n\n"
         f"Contenido de la noticia:\n{body}\n\n"
         "Responde SOLO JSON con esta forma exacta:\n"
         "{\n"
         '  "on_topic": true,\n'
+        '  "duplicada": false,\n'
         '  "interesting": 7,\n'
         '  "title": "titular claro y factual, sin clickbait",\n'
         '  "summary": "2-3 frases que resuman la noticia para no tener que leerla"\n'
@@ -321,10 +345,12 @@ def analyze_article(
     new_title = str(data.get("title") or title).strip()
     summary = str(data.get("summary") or "").strip()
     on_topic = bool(data.get("on_topic", False))
+    duplicate = bool(data.get("duplicada", False)) if recent_titles else False
 
     return {
         "on_topic": on_topic,
         "interesting": interesting,
+        "duplicate": duplicate,
         "title": new_title,
         "summary": summary,
     }

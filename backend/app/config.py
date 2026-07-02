@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 días
 
+    # Correo saliente (verificación de cuenta y reseteo de contraseña).
+    # La contraseña vive solo en .env; sin ella no se envían correos.
+    smtp_host: str = "mail.privateemail.com"
+    smtp_port: int = 465
+    smtp_user: str = "info@prasoft.es"
+    smtp_from: str = "info@prasoft.es"
+    smtp_password: str | None = None
+    # Base para construir los enlaces de los correos (en prod: https://prasoft.es/fisgon)
+    app_base_url: str = "http://localhost:5173"
+
     # Filtro de noticias: solo se muestran las que superan este umbral (1-10)
     interesting_threshold: int = 6
 

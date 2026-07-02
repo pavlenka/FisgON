@@ -30,6 +30,23 @@ class PasswordChange(BaseModel):
     new_password: str
 
 
+class Message(BaseModel):
+    message: str
+
+
+class VerifyRequest(BaseModel):
+    token: str
+
+
+class EmailRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

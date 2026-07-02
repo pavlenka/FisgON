@@ -39,6 +39,7 @@ def get_feed(
         .join(Source, Article.source_id == Source.id)
         .where(Source.user_id == user.id)
         .where(Article.on_topic == True)  # noqa: E712
+        .where(Article.is_duplicate == False)  # noqa: E712
         .where(Article.interesting_score >= settings.interesting_threshold)
         .order_by(Article.published_at.desc(), Article.id.desc())
     )

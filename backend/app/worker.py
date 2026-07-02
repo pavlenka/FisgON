@@ -25,11 +25,31 @@ def get_status(user_id: int) -> dict:
     return _status.get(user_id, {"processing": False, "new": 0})
 
 
+def _recent_feed_titles(session: Session, user_id: int) -> list[str]:
+    """Titulares recientes ya visibles en el feed del usuario (todas sus fuentes),
+    para que la IA detecte historias repetidas entre webs distintas."""
+    cutoff = datetime.utcnow() - timedelta(days=3)
+    rows = session.exec(
+        select(Article.original_title)
+        .join(Source, Article.source_id == Source.id)
+        .where(
+            Source.user_id == user_id,
+            Article.on_topic == True,  # noqa: E712
+            Article.is_duplicate == False,  # noqa: E712
+            Article.published_at >= cutoff,
+        )
+        .order_by(Article.published_at.desc())
+        .limit(40)
+    ).all()
+    return list(rows)
+
+
 def process_source(session: Session, source: Source) -> int:
     """Procesa una fuente y devuelve cuántas noticias nuevas se han guardado."""
     new_count = 0
     entries = ingest.fetch_entries(source.feed_url, settings.max_entries_per_source)
     cutoff = datetime.utcnow() - timedelta(days=source.max_age_days)
+    recent_titles = _recent_feed_titles(session, source.user_id)
 
     for entry in entries:
         # Fuera de la ventana de retención de esta fuente: no se ingiere (no borra
@@ -56,6 +76,7 @@ def process_source(session: Session, source: Source) -> int:
             session=session,
             user_id=source.user_id,
             source_id=source.id,
+            recent_titles=recent_titles,
         )
         # El feed prioriza la imagen del propio feed; si no trae, usamos el og:image.
         image_url = entry["image"] or article_data["image"]
@@ -71,6 +92,7 @@ def process_source(session: Session, source: Source) -> int:
                 image_url=image_url,
                 interesting_score=analysis["interesting"],
                 on_topic=analysis["on_topic"],
+                is_duplicate=analysis["duplicate"],
                 published_at=entry["published"],
             )
         )
@@ -88,6 +110,10 @@ def process_source(session: Session, source: Source) -> int:
             )
             continue
         new_count += 1
+        # Las siguientes entradas de esta misma pasada también deben ver este
+        # titular para no colar la misma historia dos veces.
+        if analysis["on_topic"] and not analysis["duplicate"]:
+            recent_titles.insert(0, entry["title"])
 
     source.last_fetched_at = datetime.utcnow()
     session.add(source)
