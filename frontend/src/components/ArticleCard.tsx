@@ -58,14 +58,19 @@ export default function ArticleCard({ article }: { article: Article }) {
         <span className="source">{article.source_name}</span>
         <span className="dot">·</span>
         <span className="time">{timeAgo(article.published_at)}</span>
-        <span className="score" title="Nivel de interés (1-10)">
-          ★ {article.interesting_score}
+        <span className="stamp" title="Nivel de interés según la IA (1-10)">
+          Interés {article.interesting_score}/10
         </span>
       </div>
       <h2 className="card-title">{article.title}</h2>
       <p className="card-summary">{article.summary}</p>
 
-      {extended && <p className="card-summary card-summary-extended">{extended}</p>}
+      {extended && (
+        <div className="card-summary-extended">
+          <div className="file-label">Informe completo</div>
+          <p className="card-summary">{extended}</p>
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
 
       <div className="card-actions">

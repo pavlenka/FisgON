@@ -1,71 +1,145 @@
+/* FisgON — "El expediente del fisgón".
+   Noir cálido de despacho de detective: fondo tabaco, ámbar de flexo como
+   único acento y dos voces tipográficas — Newsreader (serif de prensa) para
+   lo que dice la noticia, IBM Plex Mono (mecanografiada) para lo que dice
+   el sistema: metadatos, etiquetas, controles. */
+
 :root {
-  --bg: #0f1115;
-  --bg-card: #181b22;
-  --bg-elev: #20242d;
-  --border: #2a2f3a;
-  --text: #e6e8ec;
-  --muted: #8b93a1;
-  --accent: #4f8cff;
-  --accent-hover: #3f7bef;
-  --danger: #e5534b;
-  --star: #f2b84b;
+  --bg: #0e0c08;
+  --bg-card: #17130c;
+  --bg-elev: #211a10;
+  --bg-input: #0b0906;
+  --border: #322818;
+  --border-strong: #4a3b20;
+  --text: #efe6d8;
+  --text-soft: #d9cdb8;
+  --muted: #a08f73;
+  --accent: #e9a13b;
+  --accent-hover: #f6b95a;
+  --accent-ink: #171208;
+  --danger: #d14b3f;
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  scrollbar-color: var(--border-strong) var(--bg);
+}
+
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(60rem 30rem at 50% -12rem, rgba(233, 161, 59, 0.07), transparent 65%);
+  background-repeat: no-repeat;
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-serif);
   line-height: 1.5;
 }
 
+/* Filete de cabecera ámbar, tipo masthead de periódico. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent) 18%, var(--accent) 82%, transparent);
+  z-index: 50;
+  pointer-events: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Controles: la voz mecanografiada del sistema ---------- */
 button {
   cursor: pointer;
-  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   border: 1px solid var(--border);
   background: var(--bg-elev);
   color: var(--text);
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
-  transition: background 0.15s, border-color 0.15s;
+  padding: 0.55rem 0.95rem;
+  border-radius: 3px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 button:hover:not(:disabled) {
   border-color: var(--accent);
+  color: var(--accent);
 }
 button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
 }
 button.danger:hover:not(:disabled) {
   border-color: var(--danger);
   color: var(--danger);
 }
+
+/* Acción principal de cada pantalla: ámbar sólido. */
+button[type="submit"],
+.feed-toolbar > button,
+.detected > button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+button[type="submit"]:hover:not(:disabled),
+.feed-toolbar > button:hover:not(:disabled),
+.detected > button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
 .link-btn {
   background: none;
   border: none;
   color: var(--accent);
   padding: 0.3rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
-.link-btn:hover {
+.link-btn:hover:not(:disabled) {
   text-decoration: underline;
+  color: var(--accent-hover);
 }
 
 input {
-  font: inherit;
-  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  background: var(--bg-input);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
+  border-radius: 3px;
+  padding: 0.6rem 0.75rem;
   width: 100%;
+}
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
 }
 input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(233, 161, 59, 0.14);
 }
 
 .muted {
@@ -74,38 +148,65 @@ input:focus {
 }
 .error {
   color: var(--danger);
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
 }
 
-/* ---------- Login ---------- */
+/* Etiquetas de sección como rótulos de archivo. */
+h2,
+h3 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin: 0 0 0.9rem;
+}
+
+/* ---------- Login: la lámpara del despacho ---------- */
 .auth-screen {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 1rem;
+  background: radial-gradient(38rem 26rem at 50% 26%, rgba(233, 161, 59, 0.09), transparent 70%);
 }
 .auth-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 2rem;
+  border-radius: 4px;
+  padding: 2.2rem 2rem;
   width: 100%;
   max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
 }
+.mascot {
+  font-size: 2.6rem;
+  text-align: center;
+  line-height: 1;
+}
 .brand-big {
-  font-size: 1.8rem;
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
   font-weight: 700;
   text-align: center;
+  letter-spacing: -0.01em;
 }
-.auth-card > p {
+.on {
+  color: var(--accent);
+}
+.tagline {
+  color: var(--muted);
   text-align: center;
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.6rem;
+  font-style: italic;
+  font-size: 0.95rem;
 }
 
-/* ---------- Layout ---------- */
+/* ---------- Estructura ---------- */
 .topbar {
   position: sticky;
   top: 0;
@@ -115,51 +216,65 @@ input:focus {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
-  padding: 0.8rem 1.2rem;
-  background: rgba(15, 17, 21, 0.9);
+  padding: 0.85rem 1.2rem;
+  background: rgba(14, 12, 8, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
 .brand {
+  font-family: var(--font-serif);
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
 }
 .topbar nav {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.6rem 1rem;
+  gap: 0.6rem 1.1rem;
 }
 .topbar nav a {
-  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-soft);
   text-decoration: none;
-  font-size: 0.95rem;
 }
 .topbar nav a:hover {
   color: var(--accent);
 }
 .topbar nav .user-name {
   color: var(--muted);
-  font-size: 0.9rem;
-  text-decoration: none;
 }
 .topbar nav .user-name:hover {
   color: var(--accent);
 }
+.topbar nav .link-btn {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0;
+}
 .content {
   max-width: 720px;
   margin: 0 auto;
-  padding: 1.2rem;
+  padding: 1.4rem 1.2rem;
 }
 
-/* ---------- Cards ---------- */
+/* ---------- Fichas ---------- */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 1.1rem 1.2rem;
   margin-bottom: 1rem;
   overflow: hidden;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.feed .card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 .card-image {
   display: block;
@@ -167,6 +282,8 @@ input:focus {
   margin: -1.1rem -1.2rem 0.9rem;
   max-height: 280px;
   object-fit: cover;
+  filter: saturate(0.82) contrast(1.05) sepia(0.08);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ---------- Feed ---------- */
@@ -174,37 +291,79 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
+}
+.feed-toolbar .muted {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
 }
 .card-meta {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--muted);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.55rem;
 }
 .card-meta .source {
   color: var(--accent);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.card-meta .score {
+
+/* El sello del veredicto: la firma de la casa. */
+.stamp {
   margin-left: auto;
-  color: var(--star);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1.5px solid rgba(233, 161, 59, 0.75);
+  border-radius: 2px;
+  padding: 0.14rem 0.45rem;
+  transform: rotate(-2deg);
+  white-space: nowrap;
 }
+
 .card-title {
+  font-family: var(--font-serif);
   margin: 0 0 0.5rem;
-  font-size: 1.15rem;
-  line-height: 1.35;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
 }
 .card-summary {
   margin: 0 0 0.7rem;
-  color: #cfd3db;
+  color: var(--text-soft);
+  font-size: 1rem;
+  line-height: 1.55;
 }
 .card-summary-extended {
-  padding-top: 0.7rem;
+  padding-top: 0.8rem;
+  margin-bottom: 0.7rem;
   border-top: 1px solid var(--border);
+}
+.card-summary-extended .card-summary {
   white-space: pre-line;
+  margin-bottom: 0;
+}
+.file-label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
 }
 .card-actions {
   display: flex;
@@ -215,20 +374,24 @@ input:focus {
   margin-top: 0.2rem;
 }
 .card-link {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--accent);
   text-decoration: none;
-  font-size: 0.9rem;
 }
 .card-link:hover {
   text-decoration: underline;
+  color: var(--accent-hover);
 }
 .expand-btn {
-  font-size: 0.82rem;
-  padding: 0.35rem 0.7rem;
+  font-size: 0.7rem;
+  padding: 0.4rem 0.7rem;
   white-space: nowrap;
 }
 
-/* ---------- Sources ---------- */
+/* ---------- Fuentes ---------- */
 .add-source .row {
   display: flex;
   gap: 0.6rem;
@@ -242,12 +405,21 @@ input:focus {
   flex-direction: column;
   gap: 0.7rem;
 }
-.detected label {
+.detected label,
+.source-edit label,
+.account-form label {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--muted);
+}
+.detected .muted {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
 }
 .source-item {
   display: flex;
@@ -258,26 +430,22 @@ input:focus {
 .source-item.inactive {
   opacity: 0.5;
 }
-.source-name {
+.source-item:has(.source-edit) {
+  align-items: flex-start;
+}
+.source-info .source-name {
+  font-family: var(--font-serif);
   font-weight: 600;
+  font-size: 1.1rem;
+}
+.source-info .muted {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
 }
 .source-actions {
   display: flex;
   gap: 0.5rem;
   flex-shrink: 0;
-}
-h2 {
-  font-size: 1.05rem;
-  margin: 0 0 0.8rem;
-}
-h3 {
-  font-size: 0.95rem;
-  margin: 0 0 0.7rem;
-}
-
-/* ---------- Sources: edición completa ---------- */
-.source-item:has(.source-edit) {
-  align-items: flex-start;
 }
 .source-edit {
   width: 100%;
@@ -285,61 +453,42 @@ h3 {
   flex-direction: column;
   gap: 0.7rem;
 }
-.source-edit label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
 .source-edit .row {
   display: flex;
   gap: 0.6rem;
 }
 
-/* ---------- Cuenta ---------- */
-.account-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  margin-top: 0.8rem;
-}
-.account-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.account .card + .card {
-  margin-top: 0;
-}
-
 /* ---------- Dashboard ---------- */
 .dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.8rem;
   margin-bottom: 1.2rem;
 }
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 0.9rem 1rem;
 }
 .stat-card .stat-value {
-  font-size: 1.4rem;
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
   font-weight: 700;
+  color: var(--accent);
 }
 .stat-card .stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--muted);
-  font-size: 0.82rem;
 }
 .calls-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
 }
 .calls-table th,
 .calls-table td {
@@ -350,8 +499,9 @@ h3 {
 .calls-table th {
   color: var(--muted);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 .calls-table tr.call-error td {
   color: var(--danger);
@@ -359,4 +509,46 @@ h3 {
 .dashboard .card {
   margin-bottom: 1rem;
   overflow-x: auto;
+}
+.dashboard > .card > button {
+  margin-top: 0.8rem;
+}
+
+/* ---------- Cuenta ---------- */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+.account .card > .muted {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 480px) {
+  .content {
+    padding: 1rem 0.9rem;
+  }
+  .card {
+    padding: 1rem;
+  }
+  .card-image {
+    width: calc(100% + 2rem);
+    margin: -1rem -1rem 0.8rem;
+  }
+  .card-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* ---------- Accesibilidad: sin movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+  .feed .card:hover {
+    transform: none;
+  }
 }

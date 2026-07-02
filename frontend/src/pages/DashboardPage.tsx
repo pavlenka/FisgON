@@ -45,7 +45,7 @@ export default function DashboardPage() {
             </div>
             <div className="stat-card">
               <div className="stat-value">{summary.total_cost.toFixed(4)}</div>
-              <div className="stat-label">Coste (unidades del proveedor)</div>
+              <div className="stat-label">Coste (USD)</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">{summary.error_count}</div>

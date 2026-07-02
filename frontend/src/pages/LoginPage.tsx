@@ -41,8 +41,13 @@ export default function LoginPage() {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={submit}>
-        <div className="brand-big">🕵️ FisgON</div>
-        <p className="muted">Tus noticias filtradas y sin clickbait.</p>
+        <div className="mascot" aria-hidden="true">
+          🕵️
+        </div>
+        <div className="brand-big">
+          Fisg<span className="on">ON</span>
+        </div>
+        <p className="tagline">Tus noticias filtradas y sin clickbait.</p>
         {mode === "register" && (
           <input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
         )}

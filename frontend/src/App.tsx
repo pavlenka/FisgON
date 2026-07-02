@@ -22,7 +22,9 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">🕵️ FisgON</div>
+        <div className="brand">
+          Fisg<span className="on">ON</span>
+        </div>
         <nav>
           <Link to="/">Noticias</Link>
           <Link to="/fuentes">Fuentes</Link>
