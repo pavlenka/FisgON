@@ -24,7 +24,15 @@ def _send(to: str, subject: str, body: str) -> None:
     msg["Subject"] = subject
     msg.set_content(body)
     try:
-        with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
+        # 465 = SSL implícito; cualquier otro puerto (587) = STARTTLS. El VPS
+        # de producción (Hetzner) bloquea el 465 saliente, así que en prod se
+        # usa 587.
+        if settings.smtp_port == 465:
+            smtp = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=20)
+        else:
+            smtp = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20)
+            smtp.starttls()
+        with smtp:
             smtp.login(settings.smtp_user, settings.smtp_password)
             smtp.send_message(msg)
         log.info("Correo '%s' enviado a %s", subject, to)

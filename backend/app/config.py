@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Correo saliente (verificación de cuenta y reseteo de contraseña).
     # La contraseña vive solo en .env; sin ella no se envían correos.
     smtp_host: str = "mail.privateemail.com"
-    smtp_port: int = 465
+    smtp_port: int = 587  # STARTTLS; el 465 (SSL) está bloqueado en el VPS
     smtp_user: str = "info@prasoft.es"
     smtp_from: str = "info@prasoft.es"
     smtp_password: str | None = None
