@@ -21,6 +21,15 @@ class UserOut(BaseModel):
     name: str
 
 
+class UserUpdate(BaseModel):
+    name: str
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -47,6 +56,8 @@ class SourceCreate(BaseModel):
 
 class SourceUpdate(BaseModel):
     name: str | None = None
+    site_url: str | None = None
+    feed_url: str | None = None
     topics: str | None = None
     active: bool | None = None
     max_age_days: int | None = None

@@ -141,6 +141,10 @@ input:focus {
 .topbar nav .user-name {
   color: var(--muted);
   font-size: 0.9rem;
+  text-decoration: none;
+}
+.topbar nav .user-name:hover {
+  color: var(--accent);
 }
 .content {
   max-width: 720px;
@@ -271,12 +275,44 @@ h3 {
   margin: 0 0 0.7rem;
 }
 
-/* ---------- Sources: edición inline de retención ---------- */
-.age-edit {
-  margin-top: 0.4rem;
+/* ---------- Sources: edición completa ---------- */
+.source-item:has(.source-edit) {
+  align-items: flex-start;
 }
-.age-edit input {
-  width: 5rem;
+.source-edit {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.source-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.source-edit .row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* ---------- Cuenta ---------- */
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+.account-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.account .card + .card {
+  margin-top: 0;
 }
 
 /* ---------- Dashboard ---------- */

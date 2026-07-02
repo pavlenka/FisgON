@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import FeedPage from "./pages/FeedPage";
 import SourcesPage from "./pages/SourcesPage";
 import DashboardPage from "./pages/DashboardPage";
+import AccountPage from "./pages/AccountPage";
 
 export default function App() {
   const { token, user, loading, logout } = useAuth();
@@ -26,7 +27,11 @@ export default function App() {
           <Link to="/">Noticias</Link>
           <Link to="/fuentes">Fuentes</Link>
           <Link to="/dashboard">Dashboard</Link>
-          {user && <span className="user-name">{user.name}</span>}
+          {user && (
+            <Link to="/cuenta" className="user-name">
+              {user.name}
+            </Link>
+          )}
           <button className="link-btn" onClick={logout}>
             Salir
           </button>
@@ -37,6 +42,7 @@ export default function App() {
           <Route path="/" element={<FeedPage />} />
           <Route path="/fuentes" element={<SourcesPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/cuenta" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

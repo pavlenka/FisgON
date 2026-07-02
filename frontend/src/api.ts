@@ -145,6 +145,13 @@ export const api = {
       access_token: string;
     }>,
   me: () => apiFetch("/auth/me") as Promise<AuthUser>,
+  updateMe: (name: string) =>
+    apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify({ name }) }) as Promise<AuthUser>,
+  changePassword: (current_password: string, new_password: string) =>
+    apiFetch("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    }) as Promise<null>,
   detect: (url: string) =>
     apiFetch("/sources/detect", { method: "POST", body: JSON.stringify({ url }) }) as Promise<DetectResult>,
   listSources: () => apiFetch("/sources") as Promise<Source[]>,
@@ -152,7 +159,14 @@ export const api = {
     apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
   updateSource: (
     id: number,
-    patch: Partial<{ name: string; topics: string; active: boolean; max_age_days: number }>
+    patch: Partial<{
+      name: string;
+      site_url: string;
+      feed_url: string;
+      topics: string;
+      active: boolean;
+      max_age_days: number;
+    }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),
   refresh: () => apiFetch("/sources/refresh", { method: "POST" }),

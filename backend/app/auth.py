@@ -10,7 +10,7 @@ from sqlmodel import Session, select
 from .config import settings
 from .db import get_session
 from .models import User
-from .schemas import Token, UserCreate, UserLogin, UserOut
+from .schemas import PasswordChange, Token, UserCreate, UserLogin, UserOut, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -85,3 +85,36 @@ def get_current_user(
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)) -> User:
     return user
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(
+    data: UserUpdate,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> User:
+    if not data.name.strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El nombre no puede estar vacío")
+    user.name = data.name.strip()
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    data: PasswordChange,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> None:
+    if not verify_password(data.current_password, user.password_hash):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La contraseña actual no es correcta")
+    if len(data.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"La nueva contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres",
+        )
+    user.password_hash = hash_password(data.new_password)
+    session.add(user)
+    session.commit()

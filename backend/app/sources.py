@@ -104,8 +104,20 @@ def update_source(
 ) -> Source:
     source = _get_owned_source(source_id, user, session)
     if data.name is not None:
-        source.name = data.name
+        if not data.name.strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "El nombre no puede estar vacío")
+        source.name = data.name.strip()
+    if data.site_url is not None:
+        if not data.site_url.strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "La URL de la web no puede estar vacía")
+        source.site_url = data.site_url.strip()
+    if data.feed_url is not None:
+        if not data.feed_url.strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "La URL del feed no puede estar vacía")
+        source.feed_url = data.feed_url.strip()
     if data.topics is not None:
+        if not data.topics.strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Indica al menos un tema")
         source.topics = data.topics.strip()
     if data.active is not None:
         source.active = data.active

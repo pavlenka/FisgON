@@ -2,6 +2,18 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type DetectResult, type Source } from "../api";
 
+interface EditForm {
+  name: string;
+  site_url: string;
+  feed_url: string;
+  topics: string;
+  max_age_days: number;
+}
+
+function toEditForm(s: Source): EditForm {
+  return { name: s.name, site_url: s.site_url, feed_url: s.feed_url, topics: s.topics, max_age_days: s.max_age_days };
+}
+
 export default function SourcesPage() {
   const queryClient = useQueryClient();
   const { data: sources } = useQuery({ queryKey: ["sources"], queryFn: api.listSources });
@@ -14,7 +26,8 @@ export default function SourcesPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState(7);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [editErr, setEditErr] = useState<string | null>(null);
 
   const detectMut = useMutation({
     mutationFn: () => api.detect(url),
@@ -58,13 +71,15 @@ export default function SourcesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sources"] }),
   });
 
-  const updateAgeMut = useMutation({
-    mutationFn: ({ id, max_age_days }: { id: number; max_age_days: number }) =>
-      api.updateSource(id, { max_age_days }),
+  const updateSourceMut = useMutation({
+    mutationFn: ({ id, patch }: { id: number; patch: Partial<EditForm> }) => api.updateSource(id, patch),
     onSuccess: () => {
       setEditingId(null);
+      setEditForm(null);
+      setEditErr(null);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
     },
+    onError: (e: Error) => setEditErr(e.message),
   });
 
   return (
@@ -117,55 +132,99 @@ export default function SourcesPage() {
         {sources && sources.length === 0 && <p className="muted">Aún no has añadido ninguna web.</p>}
         {sources?.map((s) => (
           <div key={s.id} className={`card source-item ${s.active ? "" : "inactive"}`}>
-            <div className="source-info">
-              <div className="source-name">{s.name}</div>
-              <div className="muted">{s.topics}</div>
-              {editingId === s.id ? (
-                <div className="row age-edit">
+            {editingId === s.id && editForm ? (
+              <div className="source-edit">
+                <label>
+                  Nombre
+                  <input
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  />
+                </label>
+                <label>
+                  URL de la web
+                  <input
+                    value={editForm.site_url}
+                    onChange={(e) => setEditForm({ ...editForm, site_url: e.target.value })}
+                  />
+                </label>
+                <label>
+                  URL del feed RSS/Atom
+                  <input
+                    value={editForm.feed_url}
+                    onChange={(e) => setEditForm({ ...editForm, feed_url: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Temas (separados por coma)
+                  <input
+                    value={editForm.topics}
+                    onChange={(e) => setEditForm({ ...editForm, topics: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Días de antigüedad máxima
                   <input
                     type="number"
                     min={1}
                     max={365}
-                    value={editValue}
-                    onChange={(e) => setEditValue(Number(e.target.value))}
+                    value={editForm.max_age_days}
+                    onChange={(e) => setEditForm({ ...editForm, max_age_days: Number(e.target.value) })}
                   />
+                </label>
+                {editErr && <p className="error">{editErr}</p>}
+                <div className="row">
                   <button
-                    onClick={() => updateAgeMut.mutate({ id: s.id, max_age_days: editValue })}
-                    disabled={updateAgeMut.isPending}
+                    onClick={() => updateSourceMut.mutate({ id: s.id, patch: editForm })}
+                    disabled={updateSourceMut.isPending || !editForm.name.trim() || !editForm.topics.trim()}
                   >
-                    {updateAgeMut.isPending ? "Guardando…" : "Guardar"}
+                    {updateSourceMut.isPending ? "Guardando…" : "Guardar"}
                   </button>
-                  <button className="link-btn" onClick={() => setEditingId(null)}>
-                    Cancelar
-                  </button>
-                </div>
-              ) : (
-                <div className="muted">
-                  Últimos {s.max_age_days} días
-                  {" · "}
                   <button
                     className="link-btn"
                     onClick={() => {
-                      setEditingId(s.id);
-                      setEditValue(s.max_age_days);
+                      setEditingId(null);
+                      setEditForm(null);
+                      setEditErr(null);
                     }}
                   >
-                    Editar
+                    Cancelar
                   </button>
                 </div>
-              )}
-            </div>
-            <div className="source-actions">
-              <button onClick={() => toggleMut.mutate(s)}>{s.active ? "Desactivar" : "Activar"}</button>
-              <button
-                className="danger"
-                onClick={() => {
-                  if (confirm(`¿Borrar "${s.name}" y sus noticias?`)) delMut.mutate(s.id);
-                }}
-              >
-                Borrar
-              </button>
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="source-info">
+                  <div className="source-name">{s.name}</div>
+                  <div className="muted">{s.topics}</div>
+                  <div className="muted">
+                    Últimos {s.max_age_days} días
+                    {" · "}
+                    <button
+                      className="link-btn"
+                      onClick={() => {
+                        setEditingId(s.id);
+                        setEditForm(toEditForm(s));
+                        setEditErr(null);
+                      }}
+                    >
+                      Editar
+                    </button>
+                  </div>
+                </div>
+                <div className="source-actions">
+                  <button onClick={() => toggleMut.mutate(s)}>{s.active ? "Desactivar" : "Activar"}</button>
+                  <button
+                    className="danger"
+                    onClick={() => {
+                      if (confirm(`¿Borrar "${s.name}" y sus noticias?`)) delMut.mutate(s.id);
+                    }}
+                  >
+                    Borrar
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </section>
