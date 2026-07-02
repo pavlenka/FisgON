@@ -26,6 +26,53 @@ log = logging.getLogger("fisgon.llm")
 
 _ollama_client = Client(host=settings.ollama_host)
 
+# Precios de OpenCode Go en USD por millón de tokens. El campo "cost" que
+# devuelve la API ha sido siempre "0" en la práctica (no fiable), así que el
+# coste del dashboard se calcula aquí a partir de tokens reales x precio real.
+_OPENCODE_PRICING: dict[str, dict[str, float]] = {
+    "glm-5.2": {"input": 1.40, "output": 4.40},
+    "glm-5.1": {"input": 1.40, "output": 4.40},
+    "kimi-k2.7-code": {"input": 0.95, "output": 4.00},
+    "kimi-k2.6": {"input": 0.95, "output": 4.00},
+    "mimo-v2.5": {"input": 0.14, "output": 0.28},
+    "mimo-v2.5-pro": {"input": 1.74, "output": 3.48},
+    "minimax-m3": {"input": 0.30, "output": 1.20},
+    "minimax-m2.7": {"input": 0.30, "output": 1.20},
+    "minimax-m2.5": {"input": 0.30, "output": 1.20},
+    "qwen3.7-max": {"input": 2.50, "output": 7.50},
+    "deepseek-v4-pro": {"input": 1.74, "output": 3.48},
+    "deepseek-v4-flash": {"input": 0.14, "output": 0.28},
+}
+# Qwen Plus cambia de precio según el contexto total de la llamada (prompt).
+_OPENCODE_PRICING_TIERED: dict[str, dict[str, dict[str, float]]] = {
+    "qwen3.7-plus": {
+        "low": {"input": 0.40, "output": 1.60},
+        "high": {"input": 1.20, "output": 4.80},
+    },
+    "qwen3.6-plus": {
+        "low": {"input": 0.50, "output": 3.00},
+        "high": {"input": 2.00, "output": 6.00},
+    },
+}
+_TIER_THRESHOLD_TOKENS = 256_000
+
+
+def _estimate_opencode_cost(
+    model: str, prompt_tokens: int | None, completion_tokens: int | None
+) -> float | None:
+    """Coste estimado en USD para una llamada a OpenCode, o None si no
+    conocemos el precio de ese modelo."""
+    if prompt_tokens is None or completion_tokens is None:
+        return None
+    pricing = _OPENCODE_PRICING.get(model)
+    if pricing is None and model in _OPENCODE_PRICING_TIERED:
+        tier = "high" if prompt_tokens > _TIER_THRESHOLD_TOKENS else "low"
+        pricing = _OPENCODE_PRICING_TIERED[model][tier]
+    if pricing is None:
+        return None
+    cost = (prompt_tokens / 1_000_000) * pricing["input"] + (completion_tokens / 1_000_000) * pricing["output"]
+    return round(cost, 6)
+
 
 def _strip_code_fence(text: str) -> str:
     """Algunos modelos envuelven el JSON en ```json ... ```; lo quitamos si aparece."""
@@ -116,11 +163,7 @@ def _chat(
                 prompt_tokens = usage.get("prompt_tokens")
                 completion_tokens = usage.get("completion_tokens")
                 total_tokens = usage.get("total_tokens")
-                cost_raw = resp_json.get("cost")
-                try:
-                    cost = float(cost_raw) if cost_raw is not None else None
-                except (TypeError, ValueError):
-                    cost = None
+                cost = _estimate_opencode_cost(settings.opencode_model, prompt_tokens, completion_tokens)
         else:
             resp = _ollama_client.chat(
                 model=settings.ollama_model,
