@@ -33,6 +33,9 @@ services:
       - JWT_SECRET=${FISGON_JWT_SECRET}
       - INTERESTING_THRESHOLD=${FISGON_INTERESTING_THRESHOLD:-6}
       - POLL_MINUTES=${FISGON_POLL_MINUTES:-20}
+      # Correo saliente (verificación de cuenta y reseteo de contraseña)
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - APP_BASE_URL=${APP_BASE_URL:-https://prasoft.es/fisgon}
 
   fisgon-frontend:
     build: ./frontend
