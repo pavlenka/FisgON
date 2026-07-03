@@ -20,7 +20,7 @@ function Shell() {
         <nav>
           <Link to="/">Noticias</Link>
           <Link to="/fuentes">Fuentes</Link>
-          <Link to="/dashboard">Dashboard</Link>
+          {user?.is_admin && <Link to="/dashboard">Dashboard</Link>}
           {user && (
             <Link to="/cuenta" className="user-name">
               {user.name}
@@ -35,7 +35,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={<FeedPage />} />
           <Route path="/fuentes" element={<SourcesPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={user?.is_admin ? <DashboardPage /> : <Navigate to="/" replace />} />
           <Route path="/cuenta" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

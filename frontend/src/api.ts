@@ -52,6 +52,16 @@ export interface AuthUser {
   id: number;
   email: string;
   name: string;
+  is_admin: boolean;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  is_admin: boolean;
+  email_verified: boolean;
+  created_at: string;
 }
 
 export interface Source {
@@ -100,6 +110,8 @@ export interface ApiCallLogRow {
   kind: string;
   provider: string;
   model: string;
+  user_email: string;
+  user_name: string;
   source_id: number | null;
   article_id: number | null;
   prompt_tokens: number | null;
@@ -192,4 +204,5 @@ export const api = {
   getDashboardSummary: () => apiFetch("/dashboard/summary") as Promise<DashboardSummary>,
   getDashboardCalls: (cursor?: string | null) =>
     apiFetch(`/dashboard/calls?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<ApiCallLogPage>,
+  getDashboardUsers: () => apiFetch("/dashboard/users") as Promise<AdminUser[]>,
 };

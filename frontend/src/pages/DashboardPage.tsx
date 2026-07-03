@@ -12,10 +12,20 @@ function formatDate(iso: string): string {
   return date.toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+function formatCreatedAt(iso: string): string {
+  const date = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + "Z");
+  return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export default function DashboardPage() {
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: api.getDashboardSummary,
+  });
+
+  const { data: users, isLoading: loadingUsers } = useQuery({
+    queryKey: ["dashboard-users"],
+    queryFn: api.getDashboardUsers,
   });
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
@@ -82,6 +92,36 @@ export default function DashboardPage() {
       )}
 
       <div className="card">
+        <h3>Usuarios</h3>
+        {loadingUsers && <p className="muted">Cargando…</p>}
+        {!loadingUsers && (!users || users.length === 0) && <p className="muted">No hay usuarios.</p>}
+        {users && users.length > 0 && (
+          <table className="calls-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Correo verificado</th>
+                <th>Alta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.name}</td>
+                  <td>{u.email}</td>
+                  <td>{u.is_admin ? "Administrador" : "Usuario"}</td>
+                  <td>{u.email_verified ? "Sí" : "No"}</td>
+                  <td>{formatCreatedAt(u.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="card">
         <h3>Historial de llamadas</h3>
         {isLoading && <p className="muted">Cargando…</p>}
         {!isLoading && calls.length === 0 && <p className="muted">Todavía no se ha llamado a la IA.</p>}
@@ -91,6 +131,7 @@ export default function DashboardPage() {
               <tr>
                 <th>Fecha</th>
                 <th>Tipo</th>
+                <th>Usuario</th>
                 <th>Modelo</th>
                 <th>Tokens</th>
                 <th>Coste</th>
@@ -103,6 +144,7 @@ export default function DashboardPage() {
                 <tr key={c.id} className={c.success ? "" : "call-error"}>
                   <td>{formatDate(c.created_at)}</td>
                   <td>{KIND_LABELS[c.kind] ?? c.kind}</td>
+                  <td title={c.user_email}>{c.user_name}</td>
                   <td>
                     {c.provider}/{c.model}
                   </td>

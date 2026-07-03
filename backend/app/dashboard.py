@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, or_
 from sqlmodel import Session, select
 
-from .auth import get_current_user
+from .auth import get_current_admin
 from .db import get_session
 from .models import ApiCallLog, User
-from .schemas import ApiCallLogOut, ApiCallLogPage, DashboardSummary, KindBreakdown
+from .schemas import ApiCallLogOut, ApiCallLogPage, DashboardSummary, KindBreakdown, UserAdminOut
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -25,14 +25,23 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
     return datetime.fromisoformat(iso), int(id_str)
 
 
+@router.get("/users", response_model=list[UserAdminOut])
+def list_users(
+    admin: User = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[User]:
+    return session.exec(select(User).order_by(User.created_at)).all()
+
+
 @router.get("/summary", response_model=DashboardSummary)
 def get_summary(
-    user: User = Depends(get_current_user),
+    admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> DashboardSummary:
+    # Vista de administrador: agrega las llamadas de TODOS los usuarios.
     # Volumen bajo esperado (proyecto personal): agregamos en Python en vez de
     # con func.sum/group_by para mantener la consulta simple.
-    rows = session.exec(select(ApiCallLog).where(ApiCallLog.user_id == user.id)).all()
+    rows = session.exec(select(ApiCallLog)).all()
 
     total_calls = len(rows)
     total_prompt = sum(r.prompt_tokens or 0 for r in rows)
@@ -67,12 +76,13 @@ def get_summary(
 def list_calls(
     cursor: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=50),
-    user: User = Depends(get_current_user),
+    admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ApiCallLogPage:
+    # Vista de administrador: llamadas de TODOS los usuarios, con quién hizo cada una.
     stmt = (
-        select(ApiCallLog)
-        .where(ApiCallLog.user_id == user.id)
+        select(ApiCallLog, User)
+        .join(User, User.id == ApiCallLog.user_id)
         .order_by(ApiCallLog.created_at.desc(), ApiCallLog.id.desc())
     )
     if cursor:
@@ -88,6 +98,9 @@ def list_calls(
     has_more = len(rows) > limit
     rows = rows[:limit]
 
-    items = [ApiCallLogOut(**row.model_dump()) for row in rows]
-    next_cursor = _encode_cursor(rows[-1]) if has_more and rows else None
+    items = [
+        ApiCallLogOut(**call.model_dump(), user_email=call_user.email, user_name=call_user.name)
+        for call, call_user in rows
+    ]
+    next_cursor = _encode_cursor(rows[-1][0]) if has_more and rows else None
     return ApiCallLogPage(items=items, next_cursor=next_cursor)

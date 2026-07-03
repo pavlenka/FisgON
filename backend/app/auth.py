@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 from . import mailer
 from .config import settings
 from .db import get_session
-from .models import User, utcnow
+from .models import ADMIN_EMAIL, User, utcnow
 from .schemas import (
     EmailRequest,
     Message,
@@ -70,6 +70,7 @@ def register(
         name=data.name.strip(),
         password_hash=hash_password(data.password),
         verify_token=secrets.token_urlsafe(32),
+        is_admin=data.email == ADMIN_EMAIL,
     )
     session.add(user)
     session.commit()
@@ -173,6 +174,12 @@ def get_current_user(
     user = session.get(User, user_id)
     if user is None:
         raise cred_exc
+    return user
+
+
+def get_current_admin(user: User = Depends(get_current_user)) -> User:
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Requiere permisos de administrador")
     return user
 
 

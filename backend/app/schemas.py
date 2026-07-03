@@ -19,6 +19,16 @@ class UserOut(BaseModel):
     id: int
     email: str
     name: str
+    is_admin: bool
+
+
+class UserAdminOut(BaseModel):
+    id: int
+    email: str
+    name: str
+    is_admin: bool
+    email_verified: bool
+    created_at: datetime
 
 
 class UserUpdate(BaseModel):
@@ -117,6 +127,8 @@ class ApiCallLogOut(BaseModel):
     kind: str
     provider: str
     model: str
+    user_email: str
+    user_name: str
     source_id: int | None
     article_id: int | None
     prompt_tokens: int | None

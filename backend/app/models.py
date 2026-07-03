@@ -11,6 +11,11 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+# Este correo es siempre administrador, se cree la cuenta cuando se cree
+# (ver auth.register y db.init_db, que lo refuerza en cada arranque).
+ADMIN_EMAIL = "pavlenka@gmail.com"
+
+
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -21,6 +26,7 @@ class User(SQLModel, table=True):
     verify_token: str | None = Field(default=None, index=True)
     reset_token: str | None = Field(default=None, index=True)
     reset_token_expires: datetime | None = None
+    is_admin: bool = False
     created_at: datetime = Field(default_factory=utcnow)
 
 

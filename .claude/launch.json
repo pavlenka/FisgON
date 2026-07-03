@@ -8,6 +8,13 @@
       "port": 5173,
       "cwd": "frontend",
       "env": { "VITE_API_PROXY": "http://localhost:8010" }
+    },
+    {
+      "name": "fisgon-backend",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["app.main:app", "--port", "8010"],
+      "port": 8010,
+      "cwd": "backend"
     }
   ]
 }
