@@ -487,11 +487,13 @@ h3 {
 .calls-table tr.call-error td {
   color: var(--danger);
 }
-.dashboard .card {
+.dashboard .card,
+.analyzed .card {
   margin-bottom: 1rem;
   overflow-x: auto;
 }
-.dashboard > .card > button {
+.dashboard > .card > button,
+.analyzed > .card > button {
   margin-top: 0.8rem;
 }
 

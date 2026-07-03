@@ -90,6 +90,7 @@ def process_source(session: Session, source: Source) -> int:
                 original_title=entry["title"],
                 title=analysis["title"],
                 summary=analysis["summary"],
+                topic=analysis["topic"],
                 image_url=image_url,
                 interesting_score=analysis["interesting"],
                 on_topic=analysis["on_topic"],

@@ -11,7 +11,7 @@ from .auth import get_current_user
 from .config import settings
 from .db import get_session
 from .models import Article, Source, User
-from .schemas import ArticleOut, ExpandedSummary, FeedPage
+from .schemas import AnalyzedArticleOut, AnalyzedArticlePage, ArticleOut, ExpandedSummary, FeedPage
 
 router = APIRouter(tags=["feed"])
 
@@ -73,6 +73,74 @@ def get_feed(
     ]
     next_cursor = _encode_cursor(rows[-1][0]) if has_more and rows else None
     return FeedPage(items=items, next_cursor=next_cursor)
+
+
+def _encode_analyzed_cursor(article: Article) -> str:
+    raw = f"{article.fetched_at.isoformat()}|{article.id}"
+    return base64.urlsafe_b64encode(raw.encode()).decode()
+
+
+def _decode_analyzed_cursor(cursor: str) -> tuple[datetime, int]:
+    raw = base64.urlsafe_b64decode(cursor.encode()).decode()
+    iso, id_str = raw.rsplit("|", 1)
+    return datetime.fromisoformat(iso), int(id_str)
+
+
+def _rejection_reason(article: Article) -> str | None:
+    if not article.on_topic:
+        return "fuera de tema"
+    if article.is_duplicate:
+        return "duplicada"
+    if article.interesting_score < settings.interesting_threshold:
+        return "poco interesante"
+    return None
+
+
+@router.get("/articles/analyzed", response_model=AnalyzedArticlePage)
+def list_analyzed_articles(
+    cursor: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=50),
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> AnalyzedArticlePage:
+    """Todas las noticias analizadas de las fuentes del usuario (también las
+    descartadas), con el tema en una palabra y si se aprobaron para el feed."""
+    stmt = (
+        select(Article, Source.name)
+        .join(Source, Article.source_id == Source.id)
+        .where(Source.user_id == user.id)
+        .order_by(Article.fetched_at.desc(), Article.id.desc())
+    )
+    if cursor:
+        c_time, c_id = _decode_analyzed_cursor(cursor)
+        stmt = stmt.where(
+            or_(
+                Article.fetched_at < c_time,
+                and_(Article.fetched_at == c_time, Article.id < c_id),
+            )
+        )
+
+    rows = session.exec(stmt.limit(limit + 1)).all()
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+
+    items = [
+        AnalyzedArticleOut(
+            id=article.id,
+            source_id=article.source_id,
+            source_name=source_name,
+            original_title=article.original_title,
+            topic=article.topic,
+            interesting_score=article.interesting_score,
+            approved=_rejection_reason(article) is None,
+            reason=_rejection_reason(article),
+            published_at=article.published_at,
+            fetched_at=article.fetched_at,
+        )
+        for article, source_name in rows
+    ]
+    next_cursor = _encode_analyzed_cursor(rows[-1][0]) if has_more and rows else None
+    return AnalyzedArticlePage(items=items, next_cursor=next_cursor)
 
 
 @router.post("/articles/{article_id}/expand", response_model=ExpandedSummary)

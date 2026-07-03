@@ -125,6 +125,25 @@ class ExpandedSummary(BaseModel):
     summary: str
 
 
+class AnalyzedArticleOut(BaseModel):
+    id: int
+    source_id: int
+    source_name: str
+    original_title: str
+    topic: str | None
+    interesting_score: int
+    approved: bool
+    # Motivo del descarte cuando approved=false ("fuera de tema" | "duplicada" | "poco interesante").
+    reason: str | None
+    published_at: datetime
+    fetched_at: datetime
+
+
+class AnalyzedArticlePage(BaseModel):
+    items: list[AnalyzedArticleOut]
+    next_cursor: str | None = None
+
+
 class ApiCallLogOut(BaseModel):
     id: int
     kind: str

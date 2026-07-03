@@ -106,6 +106,24 @@ export interface RefreshStatus {
   error?: boolean;
 }
 
+export interface AnalyzedArticle {
+  id: number;
+  source_id: number;
+  source_name: string;
+  original_title: string;
+  topic: string | null;
+  interesting_score: number;
+  approved: boolean;
+  reason: string | null;
+  published_at: string;
+  fetched_at: string;
+}
+
+export interface AnalyzedArticlePage {
+  items: AnalyzedArticle[];
+  next_cursor: string | null;
+}
+
 export interface ApiCallLogRow {
   id: number;
   kind: string;
@@ -209,6 +227,10 @@ export const api = {
     apiFetch(`/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
   expandArticle: (id: number) =>
     apiFetch(`/articles/${id}/expand`, { method: "POST" }) as Promise<{ summary: string }>,
+  getAnalyzedArticles: (cursor?: string | null) =>
+    apiFetch(
+      `/articles/analyzed?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+    ) as Promise<AnalyzedArticlePage>,
   getDashboardSummary: () => apiFetch("/dashboard/summary") as Promise<DashboardSummary>,
   getDashboardCalls: (cursor?: string | null) =>
     apiFetch(`/dashboard/calls?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<ApiCallLogPage>,

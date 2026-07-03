@@ -339,7 +339,9 @@ def analyze_article(
         '  "duplicada": false,\n'
         '  "interesting": 7,\n'
         '  "title": "titular claro y factual, sin clickbait",\n'
-        f'  "summary": "{_summary_instruction(summary_paragraphs)}"\n'
+        f'  "summary": "{_summary_instruction(summary_paragraphs)}",\n'
+        '  "topic": "una palabra en español y en minúscula que resuma el tema concreto de '
+        'esta noticia (ej. fichajes, elecciones, sequía, ia)"\n'
         "}\n"
         "Donde interesting va de 1 (irrelevante) a 10 (imprescindible)."
     )
@@ -357,6 +359,7 @@ def analyze_article(
     summary = str(data.get("summary") or "").strip()
     on_topic = bool(data.get("on_topic", False))
     duplicate = bool(data.get("duplicada", False)) if recent_titles else False
+    topic = str(data.get("topic") or "").strip().lower() or None
 
     return {
         "on_topic": on_topic,
@@ -364,6 +367,7 @@ def analyze_article(
         "duplicate": duplicate,
         "title": new_title,
         "summary": summary,
+        "topic": topic,
     }
 
 

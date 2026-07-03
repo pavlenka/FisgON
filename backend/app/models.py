@@ -62,6 +62,7 @@ class Article(SQLModel, table=True):
     original_title: str
     title: str  # titular reescrito, anti-clickbait
     summary: str  # resumen que "destripa" la noticia
+    topic: str | None = None  # tema concreto de la noticia en una palabra, lo decide la IA
     extended_summary: str | None = None  # generado bajo demanda, más detallado
     image_url: str | None = None
     interesting_score: int  # 1-10

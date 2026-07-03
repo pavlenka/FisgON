@@ -3,6 +3,7 @@ import { useAuth } from "./auth";
 import LoginPage from "./pages/LoginPage";
 import FeedPage from "./pages/FeedPage";
 import SourcesPage from "./pages/SourcesPage";
+import AnalyzedPage from "./pages/AnalyzedPage";
 import DashboardPage from "./pages/DashboardPage";
 import AccountPage from "./pages/AccountPage";
 import VerifyPage from "./pages/VerifyPage";
@@ -20,6 +21,7 @@ function Shell() {
         <nav>
           <Link to="/">Noticias</Link>
           <Link to="/fuentes">Fuentes</Link>
+          <Link to="/analizadas">Analizadas</Link>
           {user?.is_admin && <Link to="/dashboard">Dashboard</Link>}
           {user && (
             <Link to="/cuenta" className="user-name">
@@ -35,6 +37,7 @@ function Shell() {
         <Routes>
           <Route path="/" element={<FeedPage />} />
           <Route path="/fuentes" element={<SourcesPage />} />
+          <Route path="/analizadas" element={<AnalyzedPage />} />
           <Route path="/dashboard" element={user?.is_admin ? <DashboardPage /> : <Navigate to="/" replace />} />
           <Route path="/cuenta" element={<AccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
