@@ -77,6 +77,7 @@ def process_source(session: Session, source: Source) -> int:
             user_id=source.user_id,
             source_id=source.id,
             recent_titles=recent_titles,
+            summary_paragraphs=source.summary_paragraphs,
         )
         # El feed prioriza la imagen del propio feed; si no trae, usamos el og:image.
         image_url = entry["image"] or article_data["image"]

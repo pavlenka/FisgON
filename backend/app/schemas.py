@@ -79,6 +79,7 @@ class SourceCreate(BaseModel):
     name: str
     topics: str
     max_age_days: int = 7
+    summary_paragraphs: int = 1
 
 
 class SourceUpdate(BaseModel):
@@ -88,6 +89,7 @@ class SourceUpdate(BaseModel):
     topics: str | None = None
     active: bool | None = None
     max_age_days: int | None = None
+    summary_paragraphs: int | None = None
 
 
 class SourceOut(BaseModel):
@@ -98,6 +100,7 @@ class SourceOut(BaseModel):
     topics: str
     active: bool
     max_age_days: int
+    summary_paragraphs: int
     last_fetched_at: datetime | None
 
 

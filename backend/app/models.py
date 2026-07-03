@@ -43,6 +43,8 @@ class Source(SQLModel, table=True):
     active: bool = True
     # Cuántos días hacia atrás se ingieren noticias de esta fuente (no afecta a lo ya guardado).
     max_age_days: int = 7
+    # Párrafos del resumen automático (1-3). Solo afecta a noticias analizadas después del cambio.
+    summary_paragraphs: int = 1
     created_at: datetime = Field(default_factory=utcnow)
     last_fetched_at: datetime | None = None
 

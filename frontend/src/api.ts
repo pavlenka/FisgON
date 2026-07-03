@@ -72,6 +72,7 @@ export interface Source {
   topics: string;
   active: boolean;
   max_age_days: number;
+  summary_paragraphs: number;
   last_fetched_at: string | null;
 }
 
@@ -181,8 +182,14 @@ export const api = {
   detect: (url: string) =>
     apiFetch("/sources/detect", { method: "POST", body: JSON.stringify({ url }) }) as Promise<DetectResult>,
   listSources: () => apiFetch("/sources") as Promise<Source[]>,
-  createSource: (s: { site_url: string; feed_url: string; name: string; topics: string; max_age_days: number }) =>
-    apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
+  createSource: (s: {
+    site_url: string;
+    feed_url: string;
+    name: string;
+    topics: string;
+    max_age_days: number;
+    summary_paragraphs: number;
+  }) => apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
   updateSource: (
     id: number,
     patch: Partial<{
@@ -192,6 +199,7 @@ export const api = {
       topics: string;
       active: boolean;
       max_age_days: number;
+      summary_paragraphs: number;
     }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),

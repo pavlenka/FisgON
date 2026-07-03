@@ -22,10 +22,13 @@ def init_db() -> None:
 
     with engine.connect() as conn:
         # create_all no añade columnas a tablas ya existentes: si la BD viene
-        # de antes de `is_admin`, la añadimos a mano.
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(user)"))}
-        if "is_admin" not in cols:
+        # de antes de `is_admin`/`summary_paragraphs`, las añadimos a mano.
+        user_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(user)"))}
+        if "is_admin" not in user_cols:
             conn.execute(text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+        source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
+        if "summary_paragraphs" not in source_cols:
+            conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))
         # pavlenka@gmail.com es admin siempre, aunque se editara la BD a mano.
         conn.execute(text("UPDATE user SET is_admin = 1 WHERE email = :email"), {"email": ADMIN_EMAIL})
         conn.commit()

@@ -284,6 +284,16 @@ ANALYZE_SYSTEM = (
 )
 
 
+def _summary_instruction(paragraphs: int) -> str:
+    """Instrucción de longitud del resumen corto según los párrafos configurados en la fuente."""
+    if paragraphs <= 1:
+        return "2-3 frases (un solo párrafo) que resuman la noticia para no tener que leerla"
+    return (
+        f"{paragraphs} párrafos breves (2-3 frases cada uno) que resuman la noticia para no "
+        f'tener que leerla, separados por "\\n\\n" dentro del propio string JSON'
+    )
+
+
 def analyze_article(
     topics: str,
     title: str,
@@ -293,6 +303,7 @@ def analyze_article(
     user_id: int,
     source_id: int,
     recent_titles: list[str] | None = None,
+    summary_paragraphs: int = 1,
 ) -> dict:
     """Analiza una noticia y devuelve
     {on_topic: bool, interesting: int(1-10), duplicate: bool, title: str, summary: str}.
@@ -328,7 +339,7 @@ def analyze_article(
         '  "duplicada": false,\n'
         '  "interesting": 7,\n'
         '  "title": "titular claro y factual, sin clickbait",\n'
-        '  "summary": "2-3 frases que resuman la noticia para no tener que leerla"\n'
+        f'  "summary": "{_summary_instruction(summary_paragraphs)}"\n'
         "}\n"
         "Donde interesting va de 1 (irrelevante) a 10 (imprescindible)."
     )
