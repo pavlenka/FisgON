@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlmodel import Session, select
 
-from . import ingest, llm, worker
+from . import ingest, llm, topics, worker
 from .auth import get_current_user
 from .db import get_session
 from .models import Article, Source, User
@@ -134,6 +134,9 @@ def update_source(
     if data.summary_paragraphs is not None:
         _validate_summary_paragraphs(data.summary_paragraphs)
         source.summary_paragraphs = data.summary_paragraphs
+    if data.vetoed_topics is not None:
+        # Normalizamos la lista (minúsculas, sin duplicados ni vacíos).
+        source.vetoed_topics = ", ".join(topics.parse_topics(data.vetoed_topics))
     session.add(source)
     session.commit()
     session.refresh(source)

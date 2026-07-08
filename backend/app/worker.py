@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from . import ingest, llm
+from . import ingest, llm, topics
 from .config import settings
 from .db import engine
 from .models import Article, Source
@@ -81,6 +81,9 @@ def process_source(session: Session, source: Source) -> int:
         )
         # El feed prioriza la imagen del propio feed; si no trae, usamos el og:image.
         image_url = entry["image"] or article_data["image"]
+        # Si el usuario ya vetó este tema en la fuente, la noticia entra
+        # descartada de fábrica (sin volver a molestarle con la decisión).
+        manual_approved = False if topics.has_topic(source.vetoed_topics, analysis["topic"]) else None
 
         session.add(
             Article(
@@ -95,6 +98,7 @@ def process_source(session: Session, source: Source) -> int:
                 interesting_score=analysis["interesting"],
                 on_topic=analysis["on_topic"],
                 is_duplicate=analysis["duplicate"],
+                manual_approved=manual_approved,
                 published_at=entry["published"],
             )
         )

@@ -70,6 +70,7 @@ export interface Source {
   feed_url: string;
   name: string;
   topics: string;
+  vetoed_topics: string;
   active: boolean;
   max_age_days: number;
   summary_paragraphs: number;
@@ -115,6 +116,7 @@ export interface AnalyzedArticle {
   interesting_score: number;
   approved: boolean;
   reason: string | null;
+  topic_vetoed: boolean;
   published_at: string;
   fetched_at: string;
 }
@@ -215,6 +217,7 @@ export const api = {
       site_url: string;
       feed_url: string;
       topics: string;
+      vetoed_topics: string;
       active: boolean;
       max_age_days: number;
       summary_paragraphs: number;
@@ -231,6 +234,11 @@ export const api = {
     apiFetch(
       `/articles/analyzed?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
     ) as Promise<AnalyzedArticlePage>,
+  reviewArticle: (id: number, approved: boolean, apply_to_source: boolean) =>
+    apiFetch(`/articles/${id}/review`, {
+      method: "POST",
+      body: JSON.stringify({ approved, apply_to_source }),
+    }),
   getDashboardSummary: () => apiFetch("/dashboard/summary") as Promise<DashboardSummary>,
   getDashboardCalls: (cursor?: string | null) =>
     apiFetch(`/dashboard/calls?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<ApiCallLogPage>,

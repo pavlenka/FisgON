@@ -496,6 +496,26 @@ h3 {
 .analyzed > .card > button {
   margin-top: 0.8rem;
 }
+.review-btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.veto-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--danger);
+  border-radius: 3px;
+  color: var(--danger);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.vetoed-line {
+  color: var(--danger);
+}
 
 /* ---------- Cuenta ---------- */
 .account-form {

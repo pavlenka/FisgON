@@ -29,9 +29,13 @@ def init_db() -> None:
         source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
         if "summary_paragraphs" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))
+        if "vetoed_topics" not in source_cols:
+            conn.execute(text("ALTER TABLE source ADD COLUMN vetoed_topics TEXT NOT NULL DEFAULT ''"))
         article_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(article)"))}
         if "topic" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))
+        if "manual_approved" not in article_cols:
+            conn.execute(text("ALTER TABLE article ADD COLUMN manual_approved BOOLEAN"))
         # pavlenka@gmail.com es admin siempre, aunque se editara la BD a mano.
         conn.execute(text("UPDATE user SET is_admin = 1 WHERE email = :email"), {"email": ADMIN_EMAIL})
         conn.commit()

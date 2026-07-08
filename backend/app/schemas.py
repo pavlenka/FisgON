@@ -87,6 +87,7 @@ class SourceUpdate(BaseModel):
     site_url: str | None = None
     feed_url: str | None = None
     topics: str | None = None
+    vetoed_topics: str | None = None
     active: bool | None = None
     max_age_days: int | None = None
     summary_paragraphs: int | None = None
@@ -98,6 +99,7 @@ class SourceOut(BaseModel):
     feed_url: str
     name: str
     topics: str
+    vetoed_topics: str
     active: bool
     max_age_days: int
     summary_paragraphs: int
@@ -133,10 +135,20 @@ class AnalyzedArticleOut(BaseModel):
     topic: str | None
     interesting_score: int
     approved: bool
-    # Motivo del descarte cuando approved=false ("fuera de tema" | "duplicada" | "poco interesante").
+    # Motivo del descarte cuando approved=false ("fuera de tema" | "duplicada" |
+    # "poco interesante" | "tema vetado" | "descartada a mano").
     reason: str | None
+    # Si el tema de esta noticia está actualmente vetado en su fuente.
+    topic_vetoed: bool
     published_at: datetime
     fetched_at: datetime
+
+
+class ReviewRequest(BaseModel):
+    approved: bool
+    # Aplicar la decisión a todas las noticias de este tema en la fuente
+    # (aprobar el tema o vetarlo para las presentes y futuras).
+    apply_to_source: bool = False
 
 
 class AnalyzedArticlePage(BaseModel):

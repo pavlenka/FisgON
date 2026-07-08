@@ -7,6 +7,7 @@ interface EditForm {
   site_url: string;
   feed_url: string;
   topics: string;
+  vetoed_topics: string;
   max_age_days: number;
   summary_paragraphs: number;
 }
@@ -17,6 +18,7 @@ function toEditForm(s: Source): EditForm {
     site_url: s.site_url,
     feed_url: s.feed_url,
     topics: s.topics,
+    vetoed_topics: s.vetoed_topics,
     max_age_days: s.max_age_days,
     summary_paragraphs: s.summary_paragraphs,
   };
@@ -182,6 +184,14 @@ export default function SourcesPage() {
                   />
                 </label>
                 <label>
+                  Temas vetados (separados por coma)
+                  <input
+                    value={editForm.vetoed_topics}
+                    placeholder="ninguno"
+                    onChange={(e) => setEditForm({ ...editForm, vetoed_topics: e.target.value })}
+                  />
+                </label>
+                <label>
                   Días de antigüedad máxima
                   <input
                     type="number"
@@ -227,6 +237,7 @@ export default function SourcesPage() {
                 <div className="source-info">
                   <div className="source-name">{s.name}</div>
                   <div className="muted">{s.topics}</div>
+                  {s.vetoed_topics && <div className="muted vetoed-line">Vetados: {s.vetoed_topics}</div>}
                   <div className="muted">
                     Últimos {s.max_age_days} días
                     {" · "}

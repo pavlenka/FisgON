@@ -40,6 +40,9 @@ class Source(SQLModel, table=True):
     name: str
     # Temas separados por coma, p.ej. "motor,coches,motos". Ancla el filtro on-topic.
     topics: str
+    # Temas concretos vetados por el usuario (una palabra, separados por coma).
+    # Las noticias de estos temas se descartan aunque sean on-topic.
+    vetoed_topics: str = ""
     active: bool = True
     # Cuántos días hacia atrás se ingieren noticias de esta fuente (no afecta a lo ya guardado).
     max_age_days: int = 7
@@ -70,6 +73,9 @@ class Article(SQLModel, table=True):
     # La misma historia ya publicada por otra fuente del usuario: se guarda
     # (para no reprocesarla) pero no se muestra en el feed.
     is_duplicate: bool = False
+    # Decisión manual del usuario que prevalece sobre el filtro automático:
+    # None = automático, True = aprobada a mano, False = descartada a mano.
+    manual_approved: bool | None = None
     published_at: datetime = Field(index=True)
     fetched_at: datetime = Field(default_factory=utcnow)
 
