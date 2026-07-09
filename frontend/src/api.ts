@@ -61,6 +61,7 @@ export interface AdminUser {
   name: string;
   is_admin: boolean;
   email_verified: boolean;
+  last_seen_at: string | null;
   created_at: string;
 }
 
@@ -134,6 +135,7 @@ export interface ApiCallLogRow {
   user_email: string;
   user_name: string;
   source_id: number | null;
+  source_name: string | null;
   article_id: number | null;
   prompt_tokens: number | null;
   completion_tokens: number | null;
@@ -243,4 +245,5 @@ export const api = {
   getDashboardCalls: (cursor?: string | null) =>
     apiFetch(`/dashboard/calls?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<ApiCallLogPage>,
   getDashboardUsers: () => apiFetch("/dashboard/users") as Promise<AdminUser[]>,
+  deleteUser: (id: number) => apiFetch(`/dashboard/users/${id}`, { method: "DELETE" }),
 };

@@ -1,14 +1,14 @@
-"""Dashboard de uso de la API de IA: resumen agregado y listado paginado de llamadas."""
+"""Dashboard de administración: uso de la API de IA y gestión de usuarios."""
 import base64
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, or_
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, delete, or_
 from sqlmodel import Session, select
 
 from .auth import get_current_admin
 from .db import get_session
-from .models import ApiCallLog, User
+from .models import ApiCallLog, Article, Source, User
 from .schemas import ApiCallLogOut, ApiCallLogPage, DashboardSummary, KindBreakdown, UserAdminOut
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -31,6 +31,28 @@ def list_users(
     session: Session = Depends(get_session),
 ) -> list[User]:
     return session.exec(select(User).order_by(User.created_at)).all()
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    admin: User = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    """Elimina un usuario con todo lo suyo: fuentes, noticias y registro de llamadas."""
+    if user_id == admin.id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No puedes eliminar tu propia cuenta")
+    user = session.get(User, user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuario no encontrado")
+
+    source_ids = session.exec(select(Source.id).where(Source.user_id == user_id)).all()
+    if source_ids:
+        session.exec(delete(Article).where(Article.source_id.in_(source_ids)))
+        session.exec(delete(Source).where(Source.id.in_(source_ids)))
+    session.exec(delete(ApiCallLog).where(ApiCallLog.user_id == user_id))
+    session.delete(user)
+    session.commit()
 
 
 @router.get("/summary", response_model=DashboardSummary)
@@ -79,10 +101,12 @@ def list_calls(
     admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> ApiCallLogPage:
-    # Vista de administrador: llamadas de TODOS los usuarios, con quién hizo cada una.
+    # Vista de administrador: llamadas de TODOS los usuarios, con quién hizo
+    # cada una y sobre qué web (outerjoin: la fuente puede haberse borrado).
     stmt = (
-        select(ApiCallLog, User)
+        select(ApiCallLog, User, Source.name)
         .join(User, User.id == ApiCallLog.user_id)
+        .outerjoin(Source, Source.id == ApiCallLog.source_id)
         .order_by(ApiCallLog.created_at.desc(), ApiCallLog.id.desc())
     )
     if cursor:
@@ -99,8 +123,13 @@ def list_calls(
     rows = rows[:limit]
 
     items = [
-        ApiCallLogOut(**call.model_dump(), user_email=call_user.email, user_name=call_user.name)
-        for call, call_user in rows
+        ApiCallLogOut(
+            **call.model_dump(),
+            user_email=call_user.email,
+            user_name=call_user.name,
+            source_name=source_name,
+        )
+        for call, call_user, source_name in rows
     ]
     next_cursor = _encode_cursor(rows[-1][0]) if has_more and rows else None
     return ApiCallLogPage(items=items, next_cursor=next_cursor)

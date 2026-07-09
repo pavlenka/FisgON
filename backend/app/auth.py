@@ -174,6 +174,14 @@ def get_current_user(
     user = session.get(User, user_id)
     if user is None:
         raise cred_exc
+    # Registramos la última conexión, con margen para no escribir en cada
+    # request (el dato alimenta el panel de usuarios y la pausa del barrido
+    # periódico para usuarios inactivos).
+    now = utcnow()
+    if user.last_seen_at is None or (now - user.last_seen_at) > timedelta(minutes=5):
+        user.last_seen_at = now
+        session.add(user)
+        session.commit()
     return user
 
 

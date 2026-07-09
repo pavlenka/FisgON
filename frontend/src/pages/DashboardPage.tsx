@@ -1,5 +1,6 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { api } from "../api";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, type AdminUser } from "../api";
+import { useAuth } from "../auth";
 
 const KIND_LABELS: Record<string, string> = {
   detect_topics: "Detectar tema",
@@ -18,6 +19,9 @@ function formatCreatedAt(iso: string): string {
 }
 
 export default function DashboardPage() {
+  const { user: me } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: api.getDashboardSummary,
@@ -27,6 +31,27 @@ export default function DashboardPage() {
     queryKey: ["dashboard-users"],
     queryFn: api.getDashboardUsers,
   });
+
+  const deleteUserMut = useMutation({
+    mutationFn: (id: number) => api.deleteUser(id),
+    onSuccess: () => {
+      // Borrar un usuario también borra sus llamadas: refrescamos todo el panel.
+      queryClient.invalidateQueries({ queryKey: ["dashboard-users"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-calls"] });
+    },
+  });
+
+  function handleDeleteUser(u: AdminUser) {
+    if (
+      window.confirm(
+        `¿Eliminar a ${u.name} (${u.email})?\n\n` +
+          "Se borrarán también sus fuentes, sus noticias y su historial de llamadas. No se puede deshacer."
+      )
+    ) {
+      deleteUserMut.mutate(u.id);
+    }
+  }
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ["dashboard-calls"],
@@ -103,7 +128,9 @@ export default function DashboardPage() {
                 <th>Email</th>
                 <th>Rol</th>
                 <th>Correo verificado</th>
+                <th>Última conexión</th>
                 <th>Alta</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -113,7 +140,19 @@ export default function DashboardPage() {
                   <td>{u.email}</td>
                   <td>{u.is_admin ? "Administrador" : "Usuario"}</td>
                   <td>{u.email_verified ? "Sí" : "No"}</td>
+                  <td>{u.last_seen_at ? formatDate(u.last_seen_at) : "Nunca"}</td>
                   <td>{formatCreatedAt(u.created_at)}</td>
+                  <td>
+                    {u.id !== me?.id && (
+                      <button
+                        className="danger review-btn"
+                        onClick={() => handleDeleteUser(u)}
+                        disabled={deleteUserMut.isPending}
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -132,6 +171,7 @@ export default function DashboardPage() {
                 <th>Fecha</th>
                 <th>Tipo</th>
                 <th>Usuario</th>
+                <th>Web</th>
                 <th>Modelo</th>
                 <th>Tokens</th>
                 <th>Coste</th>
@@ -145,6 +185,7 @@ export default function DashboardPage() {
                   <td>{formatDate(c.created_at)}</td>
                   <td>{KIND_LABELS[c.kind] ?? c.kind}</td>
                   <td title={c.user_email}>{c.user_name}</td>
+                  <td>{c.source_name ?? "—"}</td>
                   <td>
                     {c.provider}/{c.model}
                   </td>

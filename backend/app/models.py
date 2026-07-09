@@ -27,6 +27,9 @@ class User(SQLModel, table=True):
     reset_token: str | None = Field(default=None, index=True)
     reset_token_expires: datetime | None = None
     is_admin: bool = False
+    # Última vez que se le vio (request autenticada). El barrido periódico no
+    # actualiza las noticias de usuarios inactivos.
+    last_seen_at: datetime | None = None
     created_at: datetime = Field(default_factory=utcnow)
 
 

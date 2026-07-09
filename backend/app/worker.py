@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from . import ingest, llm, topics
 from .config import settings
 from .db import engine
-from .models import Article, Source
+from .models import Article, Source, User
 
 log = logging.getLogger("fisgon.worker")
 
@@ -157,10 +157,20 @@ def refresh_user(user_id: int) -> None:
 
 
 def process_all_active_sources() -> None:
-    """Barrido periódico de todas las fuentes activas de todos los usuarios."""
+    """Barrido periódico de las fuentes activas, solo de usuarios que se hayan
+    conectado hace poco: sin nadie que las lea, no se gastan llamadas de IA.
+    El refresco manual (botón Actualizar) no pasa por aquí y funciona siempre."""
+    seen_cutoff = datetime.utcnow() - timedelta(days=settings.inactive_after_days)
     with Session(engine) as session:
         user_ids = session.exec(
-            select(Source.user_id).where(Source.active == True).distinct()  # noqa: E712
+            select(Source.user_id)
+            .join(User, User.id == Source.user_id)
+            .where(
+                Source.active == True,  # noqa: E712
+                User.last_seen_at != None,  # noqa: E711
+                User.last_seen_at >= seen_cutoff,
+            )
+            .distinct()
         ).all()
     for user_id in user_ids:
         refresh_user(user_id)

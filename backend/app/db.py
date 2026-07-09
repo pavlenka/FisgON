@@ -26,6 +26,12 @@ def init_db() -> None:
         user_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(user)"))}
         if "is_admin" not in user_cols:
             conn.execute(text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+        if "last_seen_at" not in user_cols:
+            conn.execute(text("ALTER TABLE user ADD COLUMN last_seen_at TIMESTAMP"))
+            # Los usuarios existentes cuentan como recién vistos: así el barrido
+            # periódico no deja de actualizar a nadie hasta que pasen los días
+            # de inactividad de verdad.
+            conn.execute(text("UPDATE user SET last_seen_at = :now"), {"now": models.utcnow()})
         source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
         if "summary_paragraphs" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))

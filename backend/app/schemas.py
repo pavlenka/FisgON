@@ -28,6 +28,7 @@ class UserAdminOut(BaseModel):
     name: str
     is_admin: bool
     email_verified: bool
+    last_seen_at: datetime | None
     created_at: datetime
 
 
@@ -164,6 +165,8 @@ class ApiCallLogOut(BaseModel):
     user_email: str
     user_name: str
     source_id: int | None
+    # Nombre de la web sobre la que se hizo la llamada (None si no aplica o se borró).
+    source_name: str | None
     article_id: int | None
     prompt_tokens: int | None
     completion_tokens: int | None

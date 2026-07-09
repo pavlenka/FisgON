@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     poll_minutes: int = 20
     max_entries_per_source: int = 25
     article_max_chars: int = 4000
+    # El barrido periódico no actualiza las noticias de usuarios que lleven
+    # más de estos días sin conectarse (el refresco manual siempre funciona).
+    inactive_after_days: int = 2
 
     # Base de datos
     database_url: str = "sqlite:///./fisgon.db"
