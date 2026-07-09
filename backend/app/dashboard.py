@@ -3,7 +3,7 @@ import base64
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, delete, or_
+from sqlalchemy import and_, delete, func, or_
 from sqlmodel import Session, select
 
 from .auth import get_current_admin
@@ -29,8 +29,12 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
 def list_users(
     admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
-) -> list[User]:
-    return session.exec(select(User).order_by(User.created_at)).all()
+) -> list[UserAdminOut]:
+    users = session.exec(select(User).order_by(User.created_at)).all()
+    counts = dict(
+        session.exec(select(Source.user_id, func.count(Source.id)).group_by(Source.user_id)).all()
+    )
+    return [UserAdminOut(**u.model_dump(), source_count=counts.get(u.id, 0)) for u in users]
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

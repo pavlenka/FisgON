@@ -61,6 +61,7 @@ export interface AdminUser {
   name: string;
   is_admin: boolean;
   email_verified: boolean;
+  source_count: number;
   last_seen_at: string | null;
   created_at: string;
 }

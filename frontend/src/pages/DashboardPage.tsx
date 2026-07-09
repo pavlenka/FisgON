@@ -128,6 +128,7 @@ export default function DashboardPage() {
                 <th>Email</th>
                 <th>Rol</th>
                 <th>Correo verificado</th>
+                <th>Fuentes</th>
                 <th>Última conexión</th>
                 <th>Alta</th>
                 <th></th>
@@ -140,6 +141,7 @@ export default function DashboardPage() {
                   <td>{u.email}</td>
                   <td>{u.is_admin ? "Administrador" : "Usuario"}</td>
                   <td>{u.email_verified ? "Sí" : "No"}</td>
+                  <td>{u.source_count}</td>
                   <td>{u.last_seen_at ? formatDate(u.last_seen_at) : "Nunca"}</td>
                   <td>{formatCreatedAt(u.created_at)}</td>
                   <td>
