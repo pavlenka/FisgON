@@ -371,6 +371,30 @@ h3 {
   padding: 0.4rem 0.7rem;
   white-space: nowrap;
 }
+.card-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+.dismiss-btn {
+  margin-left: auto;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.66rem;
+  color: var(--muted);
+  border-color: transparent;
+  background: none;
+}
+.dismiss-btn:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.ask-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+.ask-form input {
+  flex: 1;
+}
 
 /* ---------- Fuentes ---------- */
 .add-source .row {

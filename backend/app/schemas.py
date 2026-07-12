@@ -114,6 +114,9 @@ class ArticleOut(BaseModel):
     source_name: str
     title: str
     summary: str
+    # Ya generado y cacheado en BD (o None): así el frontend lo muestra tras
+    # recargar la página sin volver a pedirlo.
+    extended_summary: str | None
     image_url: str | None
     link: str
     interesting_score: int
@@ -127,6 +130,14 @@ class FeedPage(BaseModel):
 
 class ExpandedSummary(BaseModel):
     summary: str
+
+
+class AskRequest(BaseModel):
+    question: str
+
+
+class AskResponse(BaseModel):
+    answer: str
 
 
 class AnalyzedArticleOut(BaseModel):

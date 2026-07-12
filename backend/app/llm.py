@@ -378,6 +378,45 @@ EXPAND_SYSTEM = (
 )
 
 
+ASK_SYSTEM = (
+    "Eres un asistente que responde preguntas sobre una noticia concreta. Respondes en "
+    "español, de forma directa y breve, basándote SOLO en el texto de la noticia. Si la "
+    "respuesta no está en el texto, lo dices claramente ('La noticia no lo menciona') en "
+    "vez de inventarla. Puedes añadir contexto general si ayuda, dejando claro qué parte "
+    "viene de la noticia y qué parte es contexto."
+)
+
+
+def answer_question(
+    topics: str,
+    title: str,
+    text: str,
+    question: str,
+    *,
+    session: Session,
+    user_id: int,
+    source_id: int,
+    article_id: int,
+) -> str:
+    """Responde una pregunta del usuario sobre una noticia concreta."""
+    body = (text or "").strip()[: settings.article_max_chars] or "(sin contenido extraído)"
+    user = (
+        f"Titular: {title}\n\n"
+        f"Contenido de la noticia:\n{body}\n\n"
+        f"Pregunta del lector: {question.strip()}"
+    )
+    return _chat(
+        ASK_SYSTEM,
+        user,
+        json_mode=False,
+        session=session,
+        user_id=user_id,
+        kind="ask_article",
+        source_id=source_id,
+        article_id=article_id,
+    ).strip()
+
+
 def expand_summary(
     topics: str, title: str, text: str, *, session: Session, user_id: int, source_id: int, article_id: int
 ) -> str:

@@ -6,6 +6,7 @@ const KIND_LABELS: Record<string, string> = {
   detect_topics: "Detectar tema",
   analyze_article: "Analizar noticia",
   expand_summary: "Resumen extenso",
+  ask_article: "Pregunta sobre noticia",
 };
 
 function formatDate(iso: string): string {

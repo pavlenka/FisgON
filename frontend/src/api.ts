@@ -92,6 +92,7 @@ export interface Article {
   source_name: string;
   title: string;
   summary: string;
+  extended_summary: string | null;
   image_url: string | null;
   link: string;
   interesting_score: number;
@@ -233,6 +234,10 @@ export const api = {
     apiFetch(`/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
   expandArticle: (id: number) =>
     apiFetch(`/articles/${id}/expand`, { method: "POST" }) as Promise<{ summary: string }>,
+  askArticle: (id: number, question: string) =>
+    apiFetch(`/articles/${id}/ask`, { method: "POST", body: JSON.stringify({ question }) }) as Promise<{
+      answer: string;
+    }>,
   getAnalyzedArticles: (cursor?: string | null) =>
     apiFetch(
       `/articles/analyzed?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`

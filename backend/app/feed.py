@@ -15,6 +15,8 @@ from .schemas import (
     AnalyzedArticleOut,
     AnalyzedArticlePage,
     ArticleOut,
+    AskRequest,
+    AskResponse,
     ExpandedSummary,
     FeedPage,
     ReviewRequest,
@@ -82,6 +84,7 @@ def get_feed(
             source_name=source_name,
             title=article.title,
             summary=article.summary,
+            extended_summary=article.extended_summary,
             image_url=article.image_url,
             link=article.link,
             interesting_score=article.interesting_score,
@@ -253,3 +256,42 @@ def expand_article(
     session.add(article)
     session.commit()
     return ExpandedSummary(summary=extended)
+
+
+@router.post("/articles/{article_id}/ask", response_model=AskResponse)
+def ask_article(
+    article_id: int,
+    data: AskRequest,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> AskResponse:
+    """Responde una pregunta concreta del usuario sobre el contexto de la noticia."""
+    question = data.question.strip()
+    if not question:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe una pregunta")
+    if len(question) > 500:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La pregunta es demasiado larga (máx. 500 caracteres)")
+
+    row = session.exec(
+        select(Article, Source)
+        .join(Source, Article.source_id == Source.id)
+        .where(Article.id == article_id, Source.user_id == user.id)
+    ).first()
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Noticia no encontrada")
+    article, source = row
+
+    article_data = ingest.extract_article(article.link)
+    # Si la web ya no permite extraer el texto, usamos lo que tenemos guardado.
+    text = article_data["text"] or article.extended_summary or article.summary
+    answer = llm.answer_question(
+        source.topics,
+        article.original_title,
+        text,
+        question,
+        session=session,
+        user_id=user.id,
+        source_id=source.id,
+        article_id=article.id,
+    )
+    return AskResponse(answer=answer)
