@@ -12,14 +12,14 @@ from sqlmodel import Session, select
 from . import mailer
 from .config import settings
 from .db import get_session
-from .models import ADMIN_EMAIL, User, utcnow
+from .models import ADMIN_EMAIL, InviteToken, User, utcnow
 from .schemas import (
     EmailRequest,
     Message,
     PasswordChange,
+    RegisterWithInvite,
     ResetPasswordRequest,
     Token,
-    UserCreate,
     UserLogin,
     UserOut,
     UserUpdate,
@@ -47,36 +47,6 @@ def create_token(user_id: int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-
-
-@router.post("/register", response_model=Message)
-def register(
-    data: UserCreate,
-    background: BackgroundTasks,
-    session: Session = Depends(get_session),
-) -> Message:
-    if not data.email or not data.password or not data.name.strip():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nombre, email y contraseña obligatorios")
-    if len(data.password) < MIN_PASSWORD_LENGTH:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            f"La contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres",
-        )
-    existing = session.exec(select(User).where(User.email == data.email)).first()
-    if existing:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El email ya está registrado")
-    user = User(
-        email=data.email,
-        name=data.name.strip(),
-        password_hash=hash_password(data.password),
-        verify_token=secrets.token_urlsafe(32),
-        is_admin=data.email == ADMIN_EMAIL,
-    )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    background.add_task(mailer.send_verification, user.email, user.name, user.verify_token)
-    return Message(message="Cuenta creada. Revisa tu correo para activarla.")
 
 
 @router.post("/verify", response_model=Message)
@@ -229,50 +199,44 @@ def change_password(
     session.commit()
 
 
-# ---------- Registro por invitación ----------
-
-from .models import InviteToken  # noqa: E402
-from .schemas import RegisterWithInvite  # noqa: E402
-
-
+# El registro es solo por invitación: el admin genera el token desde el
+# dashboard y el invitado llega aquí con el enlace del correo.
 @router.post("/register-invite", response_model=Message)
 def register_with_invite(
     data: RegisterWithInvite,
-    background: BackgroundTasks,
     session: Session = Depends(get_session),
 ) -> Message:
-    """Registro solo con token de invitación válido."""
-    from .models import utcnow as _utcnow
-
     invite = session.exec(
         select(InviteToken).where(InviteToken.token == data.invite_token)
     ).first()
-    if invite is None or invite.used_at is not None or invite.expires_at < _utcnow():
+    if invite is None or invite.used_at is not None or invite.expires_at < utcnow():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La invitación no es válida o ha caducado")
-    if invite.email and invite.email != data.email.strip().lower():
+
+    email = data.email.strip().lower()
+    if invite.email and invite.email != email:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Esta invitación es para otro correo")
 
-    if not data.email or not data.password or not data.name.strip():
+    if not email or not data.password or not data.name.strip():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nombre, email y contraseña obligatorios")
     if len(data.password) < MIN_PASSWORD_LENGTH:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"La contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres",
         )
-    existing = session.exec(select(User).where(User.email == data.email)).first()
+    existing = session.exec(select(User).where(User.email == email)).first()
     if existing:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El email ya está registrado")
 
     user = User(
-        email=data.email.strip().lower(),
+        email=email,
         name=data.name.strip(),
         password_hash=hash_password(data.password),
         email_verified=True,  # la invitación ya garantiza acceso al correo
-        is_admin=data.email.strip().lower() == ADMIN_EMAIL,
+        is_admin=email == ADMIN_EMAIL,
     )
     session.add(user)
-    invite.used_at = _utcnow()
-    invite.used_by_email = user.email
+    invite.used_at = utcnow()
+    invite.used_by_email = email
     session.add(invite)
     session.commit()
     return Message(message="Cuenta creada. Ya puedes iniciar sesión.")

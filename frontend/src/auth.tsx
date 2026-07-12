@@ -6,7 +6,6 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -45,12 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(await api.me());
   };
 
-  // El registro ya no inicia sesión: la cuenta queda pendiente hasta que el
-  // usuario verifique su correo con el enlace que le enviamos.
-  const register = async (email: string, password: string, name: string) => {
-    await api.register(email, password, name);
-  };
-
   const logout = () => {
     clearToken();
     setTok(null);
@@ -62,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ token, user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,15 +1,25 @@
-"""Dashboard de administración: uso de la API de IA y gestión de usuarios."""
+"""Dashboard de administración: uso de la API de IA, usuarios e invitaciones."""
 import base64
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, delete, func, or_
 from sqlmodel import Session, select
 
+from . import mailer
 from .auth import get_current_admin
 from .db import get_session
-from .models import ApiCallLog, Article, Source, User
-from .schemas import ApiCallLogOut, ApiCallLogPage, DashboardSummary, KindBreakdown, UserAdminOut
+from .models import ApiCallLog, Article, InviteToken, Source, User, utcnow
+from .schemas import (
+    ApiCallLogOut,
+    ApiCallLogPage,
+    DashboardSummary,
+    InviteCreate,
+    InviteOut,
+    KindBreakdown,
+    UserAdminOut,
+)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -141,13 +151,6 @@ def list_calls(
 
 # ---------- Invitaciones ----------
 
-from datetime import timedelta
-import secrets as _secrets
-
-from . import mailer as _mailer
-from .models import InviteToken
-from .schemas import InviteCreate, InviteOut
-
 INVITE_TTL_DAYS = 7
 
 
@@ -156,7 +159,6 @@ def list_invites(
     admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> list[InviteOut]:
-    from .models import utcnow
     invites = session.exec(select(InviteToken).order_by(InviteToken.created_at.desc())).all()
     return [InviteOut(**i.model_dump()) for i in invites]
 
@@ -167,17 +169,24 @@ def create_invite(
     admin: User = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ) -> InviteOut:
-    from .models import utcnow
+    email = data.email.strip().lower()
+    if not email:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El correo del invitado es obligatorio")
     invite = InviteToken(
-        token=_secrets.token_urlsafe(32),
-        email=data.email.strip().lower() or None,
+        token=secrets.token_urlsafe(32),
+        email=email,
         created_by_id=admin.id,
         expires_at=utcnow() + timedelta(days=INVITE_TTL_DAYS),
     )
     session.add(invite)
     session.commit()
     session.refresh(invite)
-    _mailer.send_invite(data.email.strip(), invite.token)
+    # Si el correo no sale, no dejamos una invitación fantasma que el admin
+    # cree enviada: la borramos y avisamos.
+    if not mailer.send_invite(email, invite.token):
+        session.delete(invite)
+        session.commit()
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar el correo de invitación")
     return InviteOut(**invite.model_dump())
 
 

@@ -2,14 +2,13 @@ import { useState, type FormEvent } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 
-const MIN_PASSWORD_LENGTH = 8;
-
-type Mode = "login" | "register" | "forgot";
+// El registro es solo por invitación: el admin envía un enlace por correo que
+// lleva a /registro?invite=TOKEN. Aquí solo hay login y recuperar contraseña.
+type Mode = "login" | "forgot";
 
 export default function LoginPage() {
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
@@ -30,26 +29,10 @@ export default function LoginPage() {
     e.preventDefault();
     setErr(null);
     setInfo(null);
-
-    if (mode === "register") {
-      if (!name.trim()) {
-        setErr("El nombre es obligatorio");
-        return;
-      }
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        setErr(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`);
-        return;
-      }
-    }
-
     setBusy(true);
     try {
       if (mode === "login") {
         await login(email, password);
-      } else if (mode === "register") {
-        await register(email, password, name.trim());
-        setMode("login");
-        setInfo("Cuenta creada. Te hemos enviado un correo con el enlace para activarla.");
       } else {
         const res = await api.forgotPassword(email);
         setInfo(res.message);
@@ -84,9 +67,6 @@ export default function LoginPage() {
           Fisg<span className="on">ON</span>
         </div>
         <p className="tagline">Tus noticias filtradas y sin clickbait.</p>
-        {mode === "register" && (
-          <input placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} required />
-        )}
         <input
           type="email"
           placeholder="Email"
@@ -111,20 +91,16 @@ export default function LoginPage() {
           </button>
         )}
         <button type="submit" disabled={busy}>
-          {busy ? "…" : mode === "login" ? "Entrar" : mode === "register" ? "Crear cuenta" : "Enviar enlace"}
+          {busy ? "…" : mode === "login" ? "Entrar" : "Enviar enlace"}
         </button>
-        {mode === "login" && (
-          <button type="button" className="link-btn" onClick={() => switchMode("forgot")}>
-            ¿Has olvidado tu contraseña?
-          </button>
-        )}
         <button
           type="button"
           className="link-btn"
-          onClick={() => switchMode(mode === "login" ? "register" : "login")}
+          onClick={() => switchMode(mode === "login" ? "forgot" : "login")}
         >
-          {mode === "login" ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Entra"}
+          {mode === "login" ? "¿Has olvidado tu contraseña?" : "Volver a entrar"}
         </button>
+        <p className="muted">El registro es solo por invitación.</p>
       </form>
     </div>
   );

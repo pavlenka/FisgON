@@ -183,10 +183,6 @@ export interface DashboardSummary {
 }
 
 export const api = {
-  register: (email: string, password: string, name: string) =>
-    apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ email, password, name }) }) as Promise<{
-      message: string;
-    }>,
   verifyEmail: (token: string) =>
     apiFetch("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }) as Promise<{ message: string }>,
   resendVerification: (email: string) =>

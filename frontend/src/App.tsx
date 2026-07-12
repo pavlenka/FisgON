@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import AccountPage from "./pages/AccountPage";
 import VerifyPage from "./pages/VerifyPage";
 import ResetPage from "./pages/ResetPage";
+import RegisterPage from "./pages/RegisterPage";
 
 function Shell() {
   const { user, logout } = useAuth();
