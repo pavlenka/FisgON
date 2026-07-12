@@ -238,6 +238,8 @@ export const api = {
     apiFetch(`/articles/${id}/ask`, { method: "POST", body: JSON.stringify({ question }) }) as Promise<{
       answer: string;
     }>,
+  emailArticle: (id: number) =>
+    apiFetch(`/articles/${id}/email`, { method: "POST" }) as Promise<{ message: string }>,
   getAnalyzedArticles: (cursor?: string | null) =>
     apiFetch(
       `/articles/analyzed?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`

@@ -81,6 +81,19 @@ export default function ArticleCard({ article }: { article: Article }) {
     onError: (e: Error) => setError(e.message),
   });
 
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
+  const emailMut = useMutation({
+    mutationFn: () => api.emailArticle(article.id),
+    onSuccess: (res) => {
+      setError(null);
+      setEmailMsg(res.message);
+    },
+    onError: (e: Error) => {
+      setEmailMsg(null);
+      setError(e.message);
+    },
+  });
+
   return (
     <article className="card">
       {article.image_url && (
@@ -140,12 +153,21 @@ export default function ArticleCard({ article }: { article: Article }) {
       )}
 
       {error && <p className="error">{error}</p>}
+      {emailMsg && <p className="muted">{emailMsg}</p>}
 
       <div className="card-actions">
         <a className="card-link" href={article.link} target="_blank" rel="noreferrer">
           Leer en la fuente →
         </a>
         <div className="card-buttons">
+          <button
+            className="expand-btn"
+            title="Enviar esta noticia a tu correo, para leerla más tarde o compartirla"
+            onClick={() => emailMut.mutate()}
+            disabled={emailMut.isPending}
+          >
+            {emailMut.isPending ? "Enviando…" : "Enviar al correo"}
+          </button>
           <button
             className="expand-btn"
             onClick={() => {

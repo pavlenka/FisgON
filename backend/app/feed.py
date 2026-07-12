@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, or_, update
 from sqlmodel import Session, select
 
-from . import ingest, llm, topics
+from . import ingest, llm, mailer, topics
 from .auth import get_current_user
 from .config import settings
 from .db import get_session
@@ -19,6 +19,7 @@ from .schemas import (
     AskResponse,
     ExpandedSummary,
     FeedPage,
+    Message,
     ReviewRequest,
 )
 
@@ -256,6 +257,38 @@ def expand_article(
     session.add(article)
     session.commit()
     return ExpandedSummary(summary=extended)
+
+
+@router.post("/articles/{article_id}/email", response_model=Message)
+def email_article(
+    article_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Message:
+    """Envía la noticia (con su resumen, y el informe completo si existe) al
+    correo del usuario, para leerla más tarde o compartirla."""
+    row = session.exec(
+        select(Article, Source)
+        .join(Source, Article.source_id == Source.id)
+        .where(Article.id == article_id, Source.user_id == user.id)
+    ).first()
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Noticia no encontrada")
+    article, source = row
+
+    sent = mailer.send_article(
+        user.email,
+        source_name=source.name,
+        title=article.title,
+        summary=article.summary,
+        extended_summary=article.extended_summary,
+        link=article.link,
+        published_at=article.published_at,
+        image_url=article.image_url,
+    )
+    if not sent:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar el correo, inténtalo de nuevo")
+    return Message(message=f"Enviada a {user.email}")
 
 
 @router.post("/articles/{article_id}/ask", response_model=AskResponse)
