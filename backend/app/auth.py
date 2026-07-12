@@ -227,3 +227,52 @@ def change_password(
     user.password_hash = hash_password(data.new_password)
     session.add(user)
     session.commit()
+
+
+# ---------- Registro por invitación ----------
+
+from .models import InviteToken  # noqa: E402
+from .schemas import RegisterWithInvite  # noqa: E402
+
+
+@router.post("/register-invite", response_model=Message)
+def register_with_invite(
+    data: RegisterWithInvite,
+    background: BackgroundTasks,
+    session: Session = Depends(get_session),
+) -> Message:
+    """Registro solo con token de invitación válido."""
+    from .models import utcnow as _utcnow
+
+    invite = session.exec(
+        select(InviteToken).where(InviteToken.token == data.invite_token)
+    ).first()
+    if invite is None or invite.used_at is not None or invite.expires_at < _utcnow():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La invitación no es válida o ha caducado")
+    if invite.email and invite.email != data.email.strip().lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Esta invitación es para otro correo")
+
+    if not data.email or not data.password or not data.name.strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nombre, email y contraseña obligatorios")
+    if len(data.password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"La contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres",
+        )
+    existing = session.exec(select(User).where(User.email == data.email)).first()
+    if existing:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El email ya está registrado")
+
+    user = User(
+        email=data.email.strip().lower(),
+        name=data.name.strip(),
+        password_hash=hash_password(data.password),
+        email_verified=True,  # la invitación ya garantiza acceso al correo
+        is_admin=data.email.strip().lower() == ADMIN_EMAIL,
+    )
+    session.add(user)
+    invite.used_at = _utcnow()
+    invite.used_by_email = user.email
+    session.add(invite)
+    session.commit()
+    return Message(message="Cuenta creada. Ya puedes iniciar sesión.")

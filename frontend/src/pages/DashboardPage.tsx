@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type AdminUser } from "../api";
+import { useState, type FormEvent } from "react";
+import { api, type AdminUser, type InviteToken } from "../api";
 import { useAuth } from "../auth";
 
 const KIND_LABELS: Record<string, string> = {
@@ -36,7 +37,6 @@ export default function DashboardPage() {
   const deleteUserMut = useMutation({
     mutationFn: (id: number) => api.deleteUser(id),
     onSuccess: () => {
-      // Borrar un usuario también borra sus llamadas: refrescamos todo el panel.
       queryClient.invalidateQueries({ queryKey: ["dashboard-users"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-calls"] });
@@ -62,6 +62,43 @@ export default function DashboardPage() {
   });
 
   const calls = data?.pages.flatMap((p) => p.items) ?? [];
+
+  // Invitaciones
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [inviteErr, setInviteErr] = useState<string | null>(null);
+
+  const { data: invites, isLoading: loadingInvites } = useQuery({
+    queryKey: ["dashboard-invites"],
+    queryFn: api.listInvites,
+  });
+
+  const createInviteMut = useMutation({
+    mutationFn: (email: string) => api.createInvite(email),
+    onSuccess: (inv: InviteToken) => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-invites"] });
+      setInviteMsg(`Invitación enviada a ${inv.email ?? inviteEmail}`);
+      setInviteEmail("");
+      setInviteErr(null);
+    },
+    onError: (e: Error) => {
+      setInviteErr(e.message);
+      setInviteMsg(null);
+    },
+  });
+
+  const revokeInviteMut = useMutation({
+    mutationFn: (id: number) => api.revokeInvite(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["dashboard-invites"] }),
+  });
+
+  function submitInvite(e: FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviteMsg(null);
+    setInviteErr(null);
+    createInviteMut.mutate(inviteEmail.trim());
+  }
 
   return (
     <div className="dashboard">
@@ -161,6 +198,61 @@ export default function DashboardPage() {
             </tbody>
           </table>
         )}
+      </div>
+
+      <div className="card">
+        <h3>Invitaciones</h3>
+        <form onSubmit={submitInvite} style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          <input
+            type="email"
+            placeholder="Correo del invitado"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            required
+            style={{ flex: 1 }}
+          />
+          <button type="submit" disabled={createInviteMut.isPending}>
+            {createInviteMut.isPending ? "Enviando…" : "Enviar invitación"}
+          </button>
+        </form>
+        {inviteMsg && <p className="muted">{inviteMsg}</p>}
+        {inviteErr && <p className="error">{inviteErr}</p>}
+        {loadingInvites && <p className="muted">Cargando…</p>}
+        {invites && invites.length > 0 && (
+          <table className="calls-table">
+            <thead>
+              <tr>
+                <th>Correo</th>
+                <th>Creada</th>
+                <th>Caduca</th>
+                <th>Usada por</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((inv) => (
+                <tr key={inv.id} className={inv.used_at ? "call-error" : ""}>
+                  <td>{inv.email ?? "—"}</td>
+                  <td>{formatDate(inv.created_at)}</td>
+                  <td>{formatCreatedAt(inv.expires_at)}</td>
+                  <td>{inv.used_by_email ?? (inv.used_at ? "?" : "Pendiente")}</td>
+                  <td>
+                    {!inv.used_at && (
+                      <button
+                        className="danger review-btn"
+                        onClick={() => revokeInviteMut.mutate(inv.id)}
+                        disabled={revokeInviteMut.isPending}
+                      >
+                        Revocar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {invites && invites.length === 0 && <p className="muted">No hay invitaciones.</p>}
       </div>
 
       <div className="card">

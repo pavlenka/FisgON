@@ -129,6 +129,16 @@ export interface AnalyzedArticlePage {
   next_cursor: string | null;
 }
 
+export interface InviteToken {
+  id: number;
+  token: string;
+  email: string | null;
+  used_at: string | null;
+  used_by_email: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
 export interface ApiCallLogRow {
   id: number;
   kind: string;
@@ -254,4 +264,10 @@ export const api = {
     apiFetch(`/dashboard/calls?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<ApiCallLogPage>,
   getDashboardUsers: () => apiFetch("/dashboard/users") as Promise<AdminUser[]>,
   deleteUser: (id: number) => apiFetch(`/dashboard/users/${id}`, { method: "DELETE" }),
+  registerWithInvite: (invite_token: string, email: string, password: string, name: string) =>
+    apiFetch("/auth/register-invite", { method: "POST", body: JSON.stringify({ invite_token, email, password, name }) }) as Promise<{ message: string }>,
+  listInvites: () => apiFetch("/dashboard/invites") as Promise<InviteToken[]>,
+  createInvite: (email: string) =>
+    apiFetch("/dashboard/invites", { method: "POST", body: JSON.stringify({ email }) }) as Promise<InviteToken>,
+  revokeInvite: (id: number) => apiFetch(`/dashboard/invites/${id}`, { method: "DELETE" }),
 };

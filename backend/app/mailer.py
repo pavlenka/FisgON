@@ -28,9 +28,6 @@ def _send(to: str, subject: str, body: str, html: str | None = None) -> bool:
     if html:
         msg.add_alternative(html, subtype="html")
     try:
-        # 465 = SSL implícito; cualquier otro puerto (587) = STARTTLS. El VPS
-        # de producción (Hetzner) bloquea el 465 saliente, así que en prod se
-        # usa 587.
         if settings.smtp_port == 465:
             smtp = smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=20)
         else:
@@ -41,7 +38,7 @@ def _send(to: str, subject: str, body: str, html: str | None = None) -> bool:
             smtp.send_message(msg)
         log.info("Correo '%s' enviado a %s", subject, to)
         return True
-    except Exception:  # noqa: BLE001 - el correo nunca debe tumbar la petición
+    except Exception:  # noqa: BLE001
         log.exception("No se pudo enviar '%s' a %s", subject, to)
         return False
 
@@ -73,6 +70,39 @@ def send_password_reset(to: str, name: str, token: str) -> None:
     )
 
 
+def send_invite(to: str, token: str) -> bool:
+    url = f"{settings.app_base_url}/registro?invite={token}"
+    html = f"""\
+<div style="background:#f5f3ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;">
+    <div style="background:#0e0c08;padding:10px 16px;border-radius:4px;display:inline-block;margin-bottom:14px;">
+      <span style="font-size:20px;font-weight:800;color:#efe6d8;">Fisg<span style="color:#e9a13b;">ON</span></span>
+    </div>
+    <div style="background:#ffffff;border:1px solid #ddd8d0;border-radius:4px;padding:24px;">
+      <h1 style="margin:0 0 12px;color:#1a1510;font-size:22px;">Tienes una invitaci&oacute;n</h1>
+      <p style="color:#2d2318;font-size:16px;line-height:1.55;margin:0 0 20px;">
+        Te han invitado a unirte a <strong>FisgON</strong>, el agregador de noticias sin clickbait.
+        La invitaci&oacute;n caduca en 7 d&iacute;as.
+      </p>
+      <a href="{url}" style="display:inline-block;background:#c47d0e;color:#ffffff;text-decoration:none;
+        padding:12px 24px;border-radius:4px;font-weight:600;font-size:15px;">
+        Crear mi cuenta
+      </a>
+    </div>
+    <p style="color:#6b5e4a;font-size:12px;margin-top:14px;">
+      <a href="{settings.app_base_url}" style="color:#6b5e4a;">FisgON</a>, tus noticias sin clickbait.
+    </p>
+  </div>
+</div>"""
+    return _send(
+        to,
+        "Te han invitado a FisgON",
+        f"Has recibido una invitación para unirte a FisgON.\n\n"
+        f"Crea tu cuenta aquí (caduca en 7 días):\n\n{url}\n\n— FisgON",
+        html=html,
+    )
+
+
 _MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 
 
@@ -87,8 +117,7 @@ def send_article(
     published_at: datetime,
     image_url: str | None,
 ) -> bool:
-    """Envía una noticia al correo del usuario con el mismo formato que la
-    tarjeta de la web (para leerla más tarde o reenviarla)."""
+    """Envía una noticia al correo del usuario (tema claro: negro sobre blanco)."""
     fecha = f"{published_at.day} {_MESES[published_at.month - 1]} {published_at.year}"
 
     plain = f"{source_name} · {fecha}\n\n{title}\n\n{summary}\n"
@@ -102,13 +131,13 @@ def send_article(
     extended_html = ""
     if extended_summary:
         parrafos = "".join(
-            f'<p style="margin:0 0 12px;color:#d9cdb8;font-size:16px;line-height:1.55;">{esc(p)}</p>'
+            f'<p style="margin:0 0 12px;color:#2d2318;font-size:16px;line-height:1.55;">{esc(p)}</p>'
             for p in extended_summary.split("\n")
             if p.strip()
         )
         extended_html = (
-            '<div style="border-top:1px solid #322818;margin-top:16px;padding-top:14px;">'
-            '<div style="color:#e9a13b;font-size:11px;font-weight:600;letter-spacing:2px;'
+            '<div style="border-top:1px solid #ddd8d0;margin-top:16px;padding-top:14px;">'
+            '<div style="color:#c47d0e;font-size:11px;font-weight:600;letter-spacing:2px;'
             'text-transform:uppercase;margin-bottom:8px;">Informe completo</div>'
             f"{parrafos}</div>"
         )
@@ -121,28 +150,28 @@ def send_article(
     )
 
     html = f"""\
-<div style="background:#0e0c08;padding:24px 12px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<div style="background:#f5f3ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;">
-    <div style="font-size:20px;font-weight:800;color:#efe6d8;margin-bottom:14px;">
-      Fisg<span style="color:#e9a13b;">ON</span>
+    <div style="background:#0e0c08;padding:10px 16px;border-radius:4px;display:inline-block;margin-bottom:14px;">
+      <span style="font-size:20px;font-weight:800;color:#efe6d8;">Fisg<span style="color:#e9a13b;">ON</span></span>
     </div>
-    <div style="background:#17130c;border:1px solid #322818;border-radius:4px;overflow:hidden;">
+    <div style="background:#ffffff;border:1px solid #ddd8d0;border-radius:4px;overflow:hidden;">
       {imagen_html}
       <div style="padding:18px 20px;">
         <div style="font-size:12px;margin-bottom:10px;">
-          <span style="color:#e9a13b;font-weight:600;letter-spacing:1px;text-transform:uppercase;">{esc(source_name)}</span>
-          <span style="color:#a08f73;"> · {fecha}</span>
+          <span style="color:#c47d0e;font-weight:600;letter-spacing:1px;text-transform:uppercase;">{esc(source_name)}</span>
+          <span style="color:#6b5e4a;"> · {fecha}</span>
         </div>
-        <h1 style="margin:0 0 10px;color:#efe6d8;font-size:22px;line-height:1.3;">{esc(title)}</h1>
-        <p style="margin:0;color:#d9cdb8;font-size:16px;line-height:1.55;">{esc(summary)}</p>
+        <h1 style="margin:0 0 10px;color:#1a1510;font-size:22px;line-height:1.3;">{esc(title)}</h1>
+        <p style="margin:0;color:#2d2318;font-size:16px;line-height:1.55;">{esc(summary)}</p>
         {extended_html}
         <p style="margin:18px 0 0;">
-          <a href="{link}" style="color:#e9a13b;font-size:13px;letter-spacing:1px;text-transform:uppercase;text-decoration:none;">Leer en la fuente &rarr;</a>
+          <a href="{link}" style="color:#c47d0e;font-size:13px;letter-spacing:1px;text-transform:uppercase;text-decoration:none;">Leer en la fuente &rarr;</a>
         </p>
       </div>
     </div>
-    <p style="color:#a08f73;font-size:12px;margin-top:14px;">
-      Enviado desde <a href="{settings.app_base_url}" style="color:#a08f73;">FisgON</a>, tus noticias sin clickbait.
+    <p style="color:#6b5e4a;font-size:12px;margin-top:14px;">
+      Enviado desde <a href="{settings.app_base_url}" style="color:#6b5e4a;">FisgON</a>, tus noticias sin clickbait.
     </p>
   </div>
 </div>"""

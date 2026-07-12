@@ -211,3 +211,24 @@ class DashboardSummary(BaseModel):
     success_count: int
     error_count: int
     by_kind: list[KindBreakdown]
+
+
+class InviteCreate(BaseModel):
+    email: str  # destinatario de la invitación
+
+
+class InviteOut(BaseModel):
+    id: int
+    token: str
+    email: str | None
+    used_at: datetime | None
+    used_by_email: str | None
+    expires_at: datetime
+    created_at: datetime
+
+
+class RegisterWithInvite(BaseModel):
+    invite_token: str
+    email: str
+    password: str
+    name: str

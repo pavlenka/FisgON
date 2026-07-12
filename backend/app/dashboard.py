@@ -137,3 +137,60 @@ def list_calls(
     ]
     next_cursor = _encode_cursor(rows[-1][0]) if has_more and rows else None
     return ApiCallLogPage(items=items, next_cursor=next_cursor)
+
+
+# ---------- Invitaciones ----------
+
+from datetime import timedelta
+import secrets as _secrets
+
+from . import mailer as _mailer
+from .models import InviteToken
+from .schemas import InviteCreate, InviteOut
+
+INVITE_TTL_DAYS = 7
+
+
+@router.get("/invites", response_model=list[InviteOut])
+def list_invites(
+    admin: User = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> list[InviteOut]:
+    from .models import utcnow
+    invites = session.exec(select(InviteToken).order_by(InviteToken.created_at.desc())).all()
+    return [InviteOut(**i.model_dump()) for i in invites]
+
+
+@router.post("/invites", response_model=InviteOut)
+def create_invite(
+    data: InviteCreate,
+    admin: User = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> InviteOut:
+    from .models import utcnow
+    invite = InviteToken(
+        token=_secrets.token_urlsafe(32),
+        email=data.email.strip().lower() or None,
+        created_by_id=admin.id,
+        expires_at=utcnow() + timedelta(days=INVITE_TTL_DAYS),
+    )
+    session.add(invite)
+    session.commit()
+    session.refresh(invite)
+    _mailer.send_invite(data.email.strip(), invite.token)
+    return InviteOut(**invite.model_dump())
+
+
+@router.delete("/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_invite(
+    invite_id: int,
+    admin: User = Depends(get_current_admin),
+    session: Session = Depends(get_session),
+) -> None:
+    invite = session.get(InviteToken, invite_id)
+    if invite is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitación no encontrada")
+    if invite.used_at is not None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La invitación ya fue usada, no se puede revocar")
+    session.delete(invite)
+    session.commit()

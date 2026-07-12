@@ -102,3 +102,18 @@ class ApiCallLog(SQLModel, table=True):
     success: bool = True
     error: str | None = None
     created_at: datetime = Field(default_factory=utcnow, index=True)
+
+
+class InviteToken(SQLModel, table=True):
+    """Token de invitación generado por el admin para registrar nuevos usuarios."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    token: str = Field(unique=True, index=True)
+    # Si se especifica, solo ese correo puede usar la invitación.
+    email: str | None = None
+    created_by_id: int = Field(foreign_key="user.id")
+    # Cuando se usa: se rellena y la invitación queda consumida.
+    used_at: datetime | None = None
+    used_by_email: str | None = None
+    expires_at: datetime = Field()
+    created_at: datetime = Field(default_factory=utcnow)

@@ -63,6 +63,7 @@ export default function App() {
       {/* Rutas públicas: llegan desde los enlaces de los correos, sin sesión. */}
       <Route path="/verificar" element={<VerifyPage />} />
       <Route path="/restablecer" element={<ResetPage />} />
+      <Route path="/registro" element={<RegisterPage />} />
       <Route path="*" element={token ? <Shell /> : <LoginPage />} />
     </Routes>
   );
