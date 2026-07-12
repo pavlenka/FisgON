@@ -373,6 +373,7 @@ h3 {
 }
 .card-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 .dismiss-btn {
@@ -567,6 +568,19 @@ h3 {
   }
   .card-title {
     font-size: 1.2rem;
+  }
+  /* Los botones de la tarjeta ocupan su propia fila y se reparten el ancho:
+     en 375px los tres en línea desbordaban la pantalla. Zona táctil mayor. */
+  .card-buttons {
+    width: 100%;
+  }
+  .card-buttons .expand-btn {
+    flex: 1 1 auto;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .dismiss-btn {
+    padding: 0.45rem 0.6rem;
   }
 }
 
