@@ -238,7 +238,8 @@ h3 {
   color: var(--text-soft);
   text-decoration: none;
 }
-.topbar nav a:hover {
+.topbar nav a:hover,
+.topbar nav a.active {
   color: var(--accent);
 }
 .topbar nav .user-name {
@@ -257,6 +258,114 @@ h3 {
   max-width: 720px;
   margin: 0 auto;
   padding: 1.4rem 1.2rem;
+}
+
+/* ---------- Animaciones: que se entienda qué está pasando ---------- */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-fade {
+  animation: page-in 0.22s ease;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.feed .card {
+  animation: card-in 0.35s ease backwards;
+}
+/* Entrada escalonada de las primeras tarjetas. */
+.feed .card:nth-child(2) { animation-delay: 0.05s; }
+.feed .card:nth-child(3) { animation-delay: 0.1s; }
+.feed .card:nth-child(4) { animation-delay: 0.15s; }
+.feed .card:nth-child(5) { animation-delay: 0.2s; }
+
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.card-summary-extended,
+.card-gallery,
+.ask-form {
+  animation: section-in 0.28s ease;
+}
+
+/* Rueda de carga: hereda el color del texto del botón donde vive. */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spinner {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.45em;
+  vertical-align: -0.12em;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Tarjetas fantasma mientras cargan las noticias. */
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton-card .sk-image,
+.skeleton-card .sk-line {
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--bg-elev) 25%, var(--border) 50%, var(--bg-elev) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.skeleton-card .sk-image {
+  width: calc(100% + 2.4rem);
+  margin: -1.1rem -1.2rem 0.9rem;
+  height: 170px;
+  border-radius: 0;
+}
+.skeleton-card .sk-line {
+  height: 0.85rem;
+  margin-bottom: 0.55rem;
+}
+.skeleton-card .sk-meta {
+  width: 35%;
+  height: 0.6rem;
+}
+.skeleton-card .sk-title {
+  width: 85%;
+  height: 1.2rem;
+}
+.skeleton-card .sk-short {
+  width: 55%;
+  margin-bottom: 0;
 }
 
 /* ---------- Fichas ---------- */
@@ -377,7 +486,6 @@ h3 {
   gap: 0.5rem;
 }
 .dismiss-btn {
-  margin-left: auto;
   padding: 0.2rem 0.5rem;
   font-size: 0.66rem;
   color: var(--muted);
@@ -388,8 +496,14 @@ h3 {
   color: var(--danger);
   border-color: var(--danger);
 }
-.fav-btn {
+/* Estrella y quitar van juntos, empujados a la derecha; si no caben,
+   saltan de línea como pareja (no uno a cada lado). */
+.card-meta-actions {
   margin-left: auto;
+  display: flex;
+  gap: 0.4rem;
+}
+.fav-btn {
   padding: 0.2rem 0.5rem;
   font-size: 0.66rem;
   color: var(--muted);
@@ -402,10 +516,6 @@ h3 {
 }
 .fav-btn:hover:not(:disabled) {
   border-color: var(--accent);
-}
-/* Con la estrella delante, el "Quitar" ya no necesita empujarse a la derecha. */
-.fav-btn + .dismiss-btn {
-  margin-left: 0;
 }
 .card-gallery {
   display: grid;
@@ -587,10 +697,63 @@ h3 {
   font-size: 0.8rem;
 }
 
+/* ---------- Barra de pestañas inferior (solo móvil) ---------- */
+.tabbar {
+  display: none;
+}
+@media (max-width: 640px) {
+  /* La navegación baja a una barra fija tipo app: la cabecera queda en una
+     sola línea (solo la marca) y los destinos, a un pulgar de distancia. */
+  .topbar nav {
+    display: none;
+  }
+  .tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    background: rgba(14, 12, 8, 0.94);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.5rem 0.2rem 0.55rem;
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+  .tabbar a svg {
+    width: 21px;
+    height: 21px;
+  }
+  .tabbar a.active {
+    color: var(--accent);
+  }
+  /* Hueco para que la barra no tape el final del contenido. */
+  .content {
+    padding-bottom: calc(4.2rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* ---------- Móvil ---------- */
 @media (max-width: 480px) {
   .content {
     padding: 1rem 0.9rem;
+    padding-bottom: calc(4.2rem + env(safe-area-inset-bottom));
   }
   .card {
     padding: 1rem;
@@ -631,5 +794,16 @@ h3 {
   }
   .feed .card:hover {
     transform: none;
+  }
+  /* Fuera las animaciones decorativas; el spinner se queda porque indica
+     una carga en curso. */
+  .page-fade,
+  .feed .card,
+  .card-summary-extended,
+  .card-gallery,
+  .ask-form,
+  .skeleton-card .sk-image,
+  .skeleton-card .sk-line {
+    animation: none !important;
   }
 }

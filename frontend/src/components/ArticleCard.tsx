@@ -130,26 +130,36 @@ export default function ArticleCard({ article }: { article: Article }) {
         <span className="source">{article.source_name}</span>
         <span className="dot">·</span>
         <span className="time">{timeAgo(article.published_at)}</span>
-        <button
-          className={`fav-btn${favorite ? " active" : ""}`}
-          title={
-            favorite
-              ? "Quitar de favoritas"
-              : "Guardar en favoritas: genera el informe completo y busca más fotos"
-          }
-          onClick={() => favMut.mutate()}
-          disabled={favMut.isPending}
-        >
-          {favMut.isPending ? "…" : favorite ? "★ Favorita" : "☆ Favorita"}
-        </button>
-        <button
-          className="dismiss-btn"
-          title="Quitar esta noticia del feed (se puede recuperar en Analizadas)"
-          onClick={() => removeMut.mutate()}
-          disabled={removeMut.isPending}
-        >
-          ✕ Quitar
-        </button>
+        <span className="card-meta-actions">
+          <button
+            className={`fav-btn${favorite ? " active" : ""}`}
+            title={
+              favorite
+                ? "Quitar de favoritas"
+                : "Guardar en favoritas: genera el informe completo y busca más fotos"
+            }
+            onClick={() => favMut.mutate()}
+            disabled={favMut.isPending}
+          >
+            {favMut.isPending ? (
+              <>
+                <span className="spinner" /> Guardando
+              </>
+            ) : favorite ? (
+              "★ Favorita"
+            ) : (
+              "☆ Favorita"
+            )}
+          </button>
+          <button
+            className="dismiss-btn"
+            title="Quitar esta noticia del feed (se puede recuperar en Analizadas)"
+            onClick={() => removeMut.mutate()}
+            disabled={removeMut.isPending}
+          >
+            ✕ Quitar
+          </button>
+        </span>
       </div>
       <h2 className="card-title">{article.title}</h2>
       <p className="card-summary">{article.summary}</p>
@@ -195,6 +205,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             onChange={(e) => setQuestion(e.target.value)}
           />
           <button type="submit" disabled={!question.trim() || askMut.isPending}>
+            {askMut.isPending && <span className="spinner" />}
             {askMut.isPending ? "Pensando…" : "Preguntar"}
           </button>
         </form>
@@ -214,6 +225,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             onClick={() => emailMut.mutate()}
             disabled={emailMut.isPending}
           >
+            {emailMut.isPending && <span className="spinner" />}
             {emailMut.isPending ? "Enviando…" : "Enviar al correo"}
           </button>
           <button
@@ -226,6 +238,7 @@ export default function ArticleCard({ article }: { article: Article }) {
             {asking ? "Cerrar pregunta" : "Preguntar"}
           </button>
           <button className="expand-btn" onClick={handleExpand} disabled={loading}>
+            {loading && <span className="spinner" />}
             {loading ? "Ampliando…" : extended ? "Ver menos" : "Resumen más extenso"}
           </button>
         </div>

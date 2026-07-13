@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { api, type Article } from "../api";
 import ArticleCard from "../components/ArticleCard";
+import SkeletonCard from "../components/SkeletonCard";
 
 export default function FavoritesPage() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
@@ -31,7 +32,13 @@ export default function FavoritesPage() {
 
   return (
     <div className="feed">
-      {isLoading && <p className="muted">Cargando…</p>}
+      {isLoading && (
+        <>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </>
+      )}
       {error && <p className="error">{(error as Error).message}</p>}
       {!isLoading && articles.length === 0 && (
         <p className="muted">
@@ -45,7 +52,7 @@ export default function FavoritesPage() {
       ))}
 
       <div ref={sentinel} />
-      {isFetchingNextPage && <p className="muted">Cargando más…</p>}
+      {isFetchingNextPage && <SkeletonCard />}
     </div>
   );
 }

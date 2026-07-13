@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
 import ArticleCard from "../components/ArticleCard";
+import SkeletonCard from "../components/SkeletonCard";
 
 export default function FeedPage() {
   const queryClient = useQueryClient();
@@ -59,12 +60,19 @@ export default function FeedPage() {
     <div className="feed">
       <div className="feed-toolbar">
         <button onClick={handleRefresh} disabled={refreshing}>
+          {refreshing && <span className="spinner" />}
           {refreshing ? "Actualizando…" : "Actualizar"}
         </button>
         {refreshMsg && <span className="muted">{refreshMsg}</span>}
       </div>
 
-      {isLoading && <p className="muted">Cargando…</p>}
+      {isLoading && (
+        <>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </>
+      )}
       {error && <p className="error">{(error as Error).message}</p>}
       {!isLoading && articles.length === 0 && (
         <p className="muted">
@@ -77,7 +85,7 @@ export default function FeedPage() {
       ))}
 
       <div ref={sentinel} />
-      {isFetchingNextPage && <p className="muted">Cargando más…</p>}
+      {isFetchingNextPage && <SkeletonCard />}
     </div>
   );
 }

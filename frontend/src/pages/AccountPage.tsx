@@ -109,6 +109,14 @@ export default function AccountPage() {
           </button>
         </div>
       </section>
+
+      {/* En móvil el "Salir" de la cabecera no se ve (la navegación vive en
+          la barra inferior): esta es la salida accesible desde Cuenta. */}
+      <section className="card">
+        <button className="danger" onClick={logout}>
+          Cerrar sesión
+        </button>
+      </section>
     </div>
   );
 }
