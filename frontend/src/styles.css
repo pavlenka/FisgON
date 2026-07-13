@@ -774,26 +774,31 @@ h3 {
     background: rgba(14, 12, 8, 0.94);
     backdrop-filter: blur(10px);
     border-top: 1px solid var(--border);
+    /* Margen lateral: las esquinas redondeadas del iPhone recortaban los
+       iconos de los extremos. */
+    padding-left: calc(0.8rem + env(safe-area-inset-left));
+    padding-right: calc(0.8rem + env(safe-area-inset-right));
     padding-bottom: env(safe-area-inset-bottom);
   }
   .tabbar a {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.2rem;
-    padding: 0.5rem 0.2rem 0.55rem;
-    font-size: 0.58rem;
+    padding: 0.5rem 0.15rem 0.55rem;
+    font-size: 0.56rem;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
     text-decoration: none;
     color: var(--muted);
     transition: color 0.15s;
   }
   .tabbar a svg {
-    width: 21px;
-    height: 21px;
+    width: 19px;
+    height: 19px;
   }
   .tabbar a.active {
     color: var(--accent);

@@ -20,6 +20,19 @@ function formatCreatedAt(iso: string): string {
   return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Números grandes abreviados (1,2 M, 340 mil…); el valor exacto se ve al
+// pasar por encima (title).
+const compact = new Intl.NumberFormat("es-ES", { notation: "compact", maximumFractionDigits: 1 });
+const exact = new Intl.NumberFormat("es-ES");
+
+function Num({ value }: { value: number }) {
+  return <span title={exact.format(value)}>{compact.format(value)}</span>;
+}
+
+function formatMs(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toLocaleString("es-ES", { maximumFractionDigits: 1 })} s` : `${ms} ms`;
+}
+
 export default function DashboardPage() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
@@ -109,11 +122,15 @@ export default function DashboardPage() {
         <>
           <div className="dashboard-stats">
             <div className="stat-card">
-              <div className="stat-value">{summary.total_calls}</div>
+              <div className="stat-value">
+                <Num value={summary.total_calls} />
+              </div>
               <div className="stat-label">Llamadas totales</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">{summary.total_tokens}</div>
+              <div className="stat-value">
+                <Num value={summary.total_tokens} />
+              </div>
               <div className="stat-label">Tokens totales</div>
             </div>
             <div className="stat-card">
@@ -121,7 +138,9 @@ export default function DashboardPage() {
               <div className="stat-label">Coste (USD)</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">{summary.error_count}</div>
+              <div className="stat-value">
+                <Num value={summary.error_count} />
+              </div>
               <div className="stat-label">Errores</div>
             </div>
           </div>
@@ -142,8 +161,12 @@ export default function DashboardPage() {
                   {summary.by_kind.map((k) => (
                     <tr key={k.kind}>
                       <td>{KIND_LABELS[k.kind] ?? k.kind}</td>
-                      <td>{k.calls}</td>
-                      <td>{k.total_tokens}</td>
+                      <td>
+                        <Num value={k.calls} />
+                      </td>
+                      <td>
+                        <Num value={k.total_tokens} />
+                      </td>
                       <td>{k.cost.toFixed(4)}</td>
                     </tr>
                   ))}
@@ -284,9 +307,9 @@ export default function DashboardPage() {
                   <td>
                     {c.provider}/{c.model}
                   </td>
-                  <td>{c.total_tokens ?? "—"}</td>
+                  <td>{c.total_tokens != null ? <Num value={c.total_tokens} /> : "—"}</td>
                   <td>{c.cost != null ? c.cost.toFixed(4) : "—"}</td>
-                  <td>{c.duration_ms != null ? `${c.duration_ms} ms` : "—"}</td>
+                  <td>{c.duration_ms != null ? formatMs(c.duration_ms) : "—"}</td>
                   <td title={c.error ?? undefined}>{c.success ? "OK" : "Error"}</td>
                 </tr>
               ))}
