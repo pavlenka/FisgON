@@ -156,9 +156,12 @@ def favorite_article(
 
     article.is_favorite = data.favorite
 
-    if data.favorite and (not article.extended_summary or article.extra_images is None):
+    # Según las preferencias del usuario (Cuenta > Preferencias).
+    want_extended = user.pref_favorite_extended and not article.extended_summary
+    want_images = user.pref_favorite_images and article.extra_images is None
+    if data.favorite and (want_extended or want_images):
         article_data = ingest.extract_article(article.link)
-        if not article.extended_summary:
+        if want_extended:
             article.extended_summary = llm.expand_summary(
                 source.topics,
                 article.original_title,
@@ -168,7 +171,7 @@ def favorite_article(
                 source_id=source.id,
                 article_id=article.id,
             )
-        if article.extra_images is None:
+        if want_images:
             extra = [u for u in article_data["images"] if u != article.image_url]
             article.extra_images = json.dumps(extra)
 
@@ -356,6 +359,22 @@ def email_article(
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Noticia no encontrada")
     article, source = row
+
+    # Si el usuario lo tiene activado en Preferencias, el correo lleva el
+    # informe completo: se genera aquí si aún no existía.
+    if user.pref_email_extended and not article.extended_summary:
+        article_data = ingest.extract_article(article.link)
+        article.extended_summary = llm.expand_summary(
+            source.topics,
+            article.original_title,
+            article_data["text"],
+            session=session,
+            user_id=user.id,
+            source_id=source.id,
+            article_id=article.id,
+        )
+        session.add(article)
+        session.commit()
 
     sent = mailer.send_article(
         user.email,

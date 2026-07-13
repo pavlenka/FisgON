@@ -172,9 +172,15 @@ def update_me(
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> User:
-    if not data.name.strip():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El nombre no puede estar vacío")
-    user.name = data.name.strip()
+    """Actualización parcial: nombre y/o preferencias."""
+    if data.name is not None:
+        if not data.name.strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "El nombre no puede estar vacío")
+        user.name = data.name.strip()
+    for pref in ("pref_favorite_extended", "pref_favorite_images", "pref_email_extended", "pref_extended_open"):
+        value = getattr(data, pref)
+        if value is not None:
+            setattr(user, pref, value)
     session.add(user)
     session.commit()
     session.refresh(user)

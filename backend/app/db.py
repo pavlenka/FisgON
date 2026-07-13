@@ -32,6 +32,9 @@ def init_db() -> None:
             # periódico no deja de actualizar a nadie hasta que pasen los días
             # de inactividad de verdad.
             conn.execute(text("UPDATE user SET last_seen_at = :now"), {"now": models.utcnow()})
+        for pref in ("pref_favorite_extended", "pref_favorite_images", "pref_email_extended", "pref_extended_open"):
+            if pref not in user_cols:
+                conn.execute(text(f"ALTER TABLE user ADD COLUMN {pref} BOOLEAN NOT NULL DEFAULT 1"))
         source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
         if "summary_paragraphs" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))

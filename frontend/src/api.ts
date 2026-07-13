@@ -53,7 +53,16 @@ export interface AuthUser {
   email: string;
   name: string;
   is_admin: boolean;
+  pref_favorite_extended: boolean;
+  pref_favorite_images: boolean;
+  pref_email_extended: boolean;
+  pref_extended_open: boolean;
 }
+
+// Campos editables de la cuenta (nombre y preferencias), todos opcionales.
+export type UserPatch = Partial<
+  Pick<AuthUser, "name" | "pref_favorite_extended" | "pref_favorite_images" | "pref_email_extended" | "pref_extended_open">
+>;
 
 export interface AdminUser {
   id: number;
@@ -205,8 +214,8 @@ export const api = {
       access_token: string;
     }>,
   me: () => apiFetch("/auth/me") as Promise<AuthUser>,
-  updateMe: (name: string) =>
-    apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify({ name }) }) as Promise<AuthUser>,
+  updateMe: (patch: UserPatch) =>
+    apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify(patch) }) as Promise<AuthUser>,
   changePassword: (current_password: string, new_password: string) =>
     apiFetch("/auth/change-password", {
       method: "POST",

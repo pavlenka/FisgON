@@ -14,6 +14,10 @@ class UserOut(BaseModel):
     email: str
     name: str
     is_admin: bool
+    pref_favorite_extended: bool
+    pref_favorite_images: bool
+    pref_email_extended: bool
+    pref_extended_open: bool
 
 
 class UserAdminOut(BaseModel):
@@ -28,7 +32,12 @@ class UserAdminOut(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: str
+    # Actualización parcial: solo se toca lo que venga en la petición.
+    name: str | None = None
+    pref_favorite_extended: bool | None = None
+    pref_favorite_images: bool | None = None
+    pref_email_extended: bool | None = None
+    pref_extended_open: bool | None = None
 
 
 class PasswordChange(BaseModel):

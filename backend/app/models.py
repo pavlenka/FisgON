@@ -27,6 +27,11 @@ class User(SQLModel, table=True):
     reset_token: str | None = Field(default=None, index=True)
     reset_token_expires: datetime | None = None
     is_admin: bool = False
+    # Preferencias del usuario (editables en Cuenta > Preferencias).
+    pref_favorite_extended: bool = True  # generar informe al marcar favorita
+    pref_favorite_images: bool = True  # buscar fotos al marcar favorita
+    pref_email_extended: bool = True  # generar informe al enviar por correo
+    pref_extended_open: bool = True  # informe desplegado por defecto en las tarjetas
     # Última vez que se le vio (request autenticada). El barrido periódico no
     # actualiza las noticias de usuarios inactivos.
     last_seen_at: datetime | None = None

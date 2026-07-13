@@ -1,7 +1,31 @@
 import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { api } from "../api";
+import { api, type UserPatch } from "../api";
 import { useAuth } from "../auth";
+
+// Preferencias de la cuenta: etiqueta y explicación de cada interruptor.
+const PREFS: { key: keyof UserPatch & `pref_${string}`; label: string; hint: string }[] = [
+  {
+    key: "pref_favorite_extended",
+    label: "Informe completo al marcar favorita",
+    hint: "Genera el informe automáticamente al guardar una noticia en favoritas.",
+  },
+  {
+    key: "pref_favorite_images",
+    label: "Fotos adicionales al marcar favorita",
+    hint: "Busca más fotos del artículo y las muestra en una galería.",
+  },
+  {
+    key: "pref_email_extended",
+    label: "Informe completo al enviar al correo",
+    hint: "El correo incluye el informe; si no existe, se genera antes de enviar.",
+  },
+  {
+    key: "pref_extended_open",
+    label: "Informe desplegado en las tarjetas",
+    hint: "Si lo apagas, el informe aparece plegado y se abre al tocarlo.",
+  },
+];
 
 export default function AccountPage() {
   const { user, refreshUser, logout } = useAuth();
@@ -22,12 +46,23 @@ export default function AccountPage() {
   const [passwordErr, setPasswordErr] = useState<string | null>(null);
 
   const nameMut = useMutation({
-    mutationFn: (n: string) => api.updateMe(n),
+    mutationFn: (n: string) => api.updateMe({ name: n }),
     onSuccess: async () => {
       await refreshUser();
       setNameMsg("Nombre actualizado.");
     },
     onError: (e: Error) => setNameMsg(e.message),
+  });
+
+  // Las preferencias se guardan solas al cambiar cada interruptor.
+  const [prefMsg, setPrefMsg] = useState<string | null>(null);
+  const prefMut = useMutation({
+    mutationFn: (patch: UserPatch) => api.updateMe(patch),
+    onSuccess: async () => {
+      await refreshUser();
+      setPrefMsg("Guardado.");
+    },
+    onError: (e: Error) => setPrefMsg(e.message),
   });
 
   const passwordMut = useMutation({
@@ -74,6 +109,30 @@ export default function AccountPage() {
           >
             {nameMut.isPending ? "Guardando…" : "Guardar nombre"}
           </button>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3>Preferencias</h3>
+        <div className="prefs">
+          {PREFS.map((p) => (
+            <label key={p.key} className="pref-row">
+              <input
+                type="checkbox"
+                checked={user?.[p.key] ?? true}
+                disabled={prefMut.isPending}
+                onChange={(e) => {
+                  setPrefMsg(null);
+                  prefMut.mutate({ [p.key]: e.target.checked });
+                }}
+              />
+              <span>
+                {p.label}
+                <small>{p.hint}</small>
+              </span>
+            </label>
+          ))}
+          {prefMsg && <p className={prefMut.isError ? "error" : "muted"}>{prefMsg}</p>}
         </div>
       </section>
 

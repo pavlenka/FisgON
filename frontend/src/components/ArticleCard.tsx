@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
+import { useAuth } from "../auth";
 
 // Las fechas del backend son UTC naive (sin zona); las tratamos como UTC.
 function toDate(iso: string): Date {
@@ -22,10 +23,14 @@ function timeAgo(iso: string): string {
 
 export default function ArticleCard({ article }: { article: Article }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // El resumen extenso está guardado en BD: si ya se generó alguna vez,
   // se muestra directamente aunque se haya recargado la página.
   const [extended, setExtended] = useState<string | null>(article.extended_summary);
+  // El informe es un acordeón: desplegado o plegado según la preferencia
+  // del usuario (Cuenta > Preferencias).
+  const [reportOpen, setReportOpen] = useState(user?.pref_extended_open ?? true);
   const [favorite, setFavorite] = useState(article.is_favorite);
   const [gallery, setGallery] = useState<string[]>(article.extra_images);
   const [loading, setLoading] = useState(false);
@@ -37,12 +42,8 @@ export default function ArticleCard({ article }: { article: Article }) {
 
   async function handleExpand() {
     if (extended) {
-      setExtended(null);
-      return;
-    }
-    if (article.extended_summary) {
-      // Ya estaba generado (lo habíamos plegado): no hace falta pedirlo.
-      setExtended(article.extended_summary);
+      // Ya generado: el botón pliega/despliega, no vuelve a pedirlo.
+      setReportOpen(!reportOpen);
       return;
     }
     setLoading(true);
@@ -50,6 +51,7 @@ export default function ArticleCard({ article }: { article: Article }) {
     try {
       const res = await api.expandArticle(article.id);
       setExtended(res.summary);
+      setReportOpen(true);
       article.extended_summary = res.summary;
     } catch (e) {
       setError((e as Error).message);
@@ -91,6 +93,10 @@ export default function ArticleCard({ article }: { article: Article }) {
       setError(null);
       setFavorite(res.is_favorite);
       setGallery(res.extra_images);
+      if (res.extended_summary && !extended) {
+        // Recién generado al marcar favorita: se muestra desplegado.
+        setReportOpen(true);
+      }
       setExtended(res.extended_summary);
       article.is_favorite = res.is_favorite;
       article.extra_images = res.extra_images;
@@ -103,9 +109,20 @@ export default function ArticleCard({ article }: { article: Article }) {
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const emailMut = useMutation({
     mutationFn: () => api.emailArticle(article.id),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       setError(null);
       setEmailMsg(res.message);
+      // Si el correo generó el informe en el backend, lo recogemos para la
+      // tarjeta (viene cacheado: no cuesta otra llamada a la IA).
+      if (user?.pref_email_extended && !extended) {
+        try {
+          const exp = await api.expandArticle(article.id);
+          setExtended(exp.summary);
+          article.extended_summary = exp.summary;
+        } catch {
+          /* si falla, la tarjeta se queda como estaba */
+        }
+      }
     },
     onError: (e: Error) => {
       setEmailMsg(null);
@@ -166,8 +183,15 @@ export default function ArticleCard({ article }: { article: Article }) {
 
       {extended && (
         <div className="card-summary-extended">
-          <div className="file-label">Informe completo</div>
-          <p className="card-summary">{extended}</p>
+          <button
+            className="report-toggle"
+            onClick={() => setReportOpen(!reportOpen)}
+            title={reportOpen ? "Plegar el informe" : "Desplegar el informe"}
+          >
+            <span className={`chevron${reportOpen ? " open" : ""}`}>▸</span>
+            Informe completo
+          </button>
+          {reportOpen && <p className="card-summary">{extended}</p>}
         </div>
       )}
 
@@ -239,7 +263,13 @@ export default function ArticleCard({ article }: { article: Article }) {
           </button>
           <button className="expand-btn" onClick={handleExpand} disabled={loading}>
             {loading && <span className="spinner" />}
-            {loading ? "Ampliando…" : extended ? "Ver menos" : "Resumen más extenso"}
+            {loading
+              ? "Ampliando…"
+              : extended
+                ? reportOpen
+                  ? "Plegar informe"
+                  : "Desplegar informe"
+                : "Resumen más extenso"}
           </button>
         </div>
       </div>
