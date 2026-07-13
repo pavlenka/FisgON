@@ -96,6 +96,9 @@ export interface Article {
   image_url: string | null;
   link: string;
   interesting_score: number;
+  is_favorite: boolean;
+  // Fotos adicionales del artículo, extraídas al marcarla favorita.
+  extra_images: string[];
   published_at: string;
 }
 
@@ -238,6 +241,10 @@ export const api = {
   refreshStatus: () => apiFetch("/sources/refresh/status") as Promise<RefreshStatus>,
   getFeed: (cursor?: string | null) =>
     apiFetch(`/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
+  getFavorites: (cursor?: string | null) =>
+    apiFetch(`/articles/favorites?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
+  favoriteArticle: (id: number, favorite: boolean) =>
+    apiFetch(`/articles/${id}/favorite`, { method: "POST", body: JSON.stringify({ favorite }) }) as Promise<Article>,
   expandArticle: (id: number) =>
     apiFetch(`/articles/${id}/expand`, { method: "POST" }) as Promise<{ summary: string }>,
   askArticle: (id: number, question: string) =>

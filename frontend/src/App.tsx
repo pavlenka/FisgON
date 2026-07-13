@@ -2,6 +2,7 @@ import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
 import LoginPage from "./pages/LoginPage";
 import FeedPage from "./pages/FeedPage";
+import FavoritesPage from "./pages/FavoritesPage";
 import SourcesPage from "./pages/SourcesPage";
 import AnalyzedPage from "./pages/AnalyzedPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -21,6 +22,7 @@ function Shell() {
         </div>
         <nav>
           <Link to="/">Noticias</Link>
+          <Link to="/favoritas">Favoritas</Link>
           <Link to="/fuentes">Fuentes</Link>
           <Link to="/analizadas">Analizadas</Link>
           {user?.is_admin && <Link to="/dashboard">Dashboard</Link>}
@@ -37,6 +39,7 @@ function Shell() {
       <main className="content">
         <Routes>
           <Route path="/" element={<FeedPage />} />
+          <Route path="/favoritas" element={<FavoritesPage />} />
           <Route path="/fuentes" element={<SourcesPage />} />
           <Route path="/analizadas" element={<AnalyzedPage />} />
           <Route path="/dashboard" element={user?.is_admin ? <DashboardPage /> : <Navigate to="/" replace />} />

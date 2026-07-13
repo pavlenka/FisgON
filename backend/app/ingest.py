@@ -174,17 +174,44 @@ def _og_image(html: str) -> str | None:
     return match.group(1) if match else None
 
 
+# Imágenes que no son fotos del artículo: logos, iconos, avatares, píxeles de
+# tracking... Se filtran por nombre; y solo aceptamos formatos de foto.
+_IMG_JUNK = re.compile(r"logo|icon|avatar|sprite|pixel|banner|badge|button|placeholder", re.IGNORECASE)
+_IMG_PHOTO = re.compile(r"\.(jpe?g|png|webp|avif)([?#]|$)", re.IGNORECASE)
+
+
+def _article_images(html: str, base_url: str, limit: int = 6) -> list[str]:
+    """Fotos del cuerpo del artículo (heurística sobre las <img> de la página)."""
+    seen: set[str] = set()
+    images: list[str] = []
+    # data-src primero: los CMS con carga perezosa ponen un placeholder en src.
+    for match in re.finditer(r'<img[^>]+?(?:data-src|src)=["\']([^"\']+)["\']', html, flags=re.IGNORECASE):
+        src = urljoin(base_url, match.group(1).strip())
+        if not src.startswith(("http://", "https://")):
+            continue
+        if _IMG_JUNK.search(src) or not _IMG_PHOTO.search(src):
+            continue
+        if src in seen:
+            continue
+        seen.add(src)
+        images.append(src)
+        if len(images) >= limit:
+            break
+    return images
+
+
 def extract_article(link: str) -> dict:
-    """Descarga el artículo una vez y devuelve {text, image}.
+    """Descarga el artículo una vez y devuelve {text, image, images}.
 
     text: contenido principal (truncado), para dar contexto a la IA.
     image: og:image de la página, como respaldo si el feed no traía imagen.
+    images: más fotos del artículo (para la galería de favoritas).
     """
     if not link:
-        return {"text": "", "image": None}
+        return {"text": "", "image": None, "images": []}
     resp = _http_get(link)
     if resp is None:
-        return {"text": "", "image": None}
+        return {"text": "", "image": None, "images": []}
     text = trafilatura.extract(
         resp.text,
         include_comments=False,
@@ -194,4 +221,5 @@ def extract_article(link: str) -> dict:
     return {
         "text": (text or "")[: settings.article_max_chars],
         "image": _og_image(resp.text),
+        "images": _article_images(resp.text, link),
     }

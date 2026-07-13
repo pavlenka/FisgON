@@ -79,6 +79,10 @@ class Article(SQLModel, table=True):
     # Decisión manual del usuario que prevalece sobre el filtro automático:
     # None = automático, True = aprobada a mano, False = descartada a mano.
     manual_approved: bool | None = None
+    # Favorita del usuario: al marcarla se genera el informe extenso y se
+    # extraen más fotos del artículo (extra_images, lista JSON de URLs).
+    is_favorite: bool = False
+    extra_images: str | None = None
     published_at: datetime = Field(index=True)
     fetched_at: datetime = Field(default_factory=utcnow)
 

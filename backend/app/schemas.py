@@ -114,6 +114,9 @@ class ArticleOut(BaseModel):
     image_url: str | None
     link: str
     interesting_score: int
+    is_favorite: bool
+    # Fotos adicionales del artículo, extraídas al marcarla favorita.
+    extra_images: list[str]
     published_at: datetime
 
 
@@ -124,6 +127,10 @@ class FeedPage(BaseModel):
 
 class ExpandedSummary(BaseModel):
     summary: str
+
+
+class FavoriteRequest(BaseModel):
+    favorite: bool
 
 
 class AskRequest(BaseModel):

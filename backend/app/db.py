@@ -42,6 +42,10 @@ def init_db() -> None:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))
         if "manual_approved" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN manual_approved BOOLEAN"))
+        if "is_favorite" not in article_cols:
+            conn.execute(text("ALTER TABLE article ADD COLUMN is_favorite BOOLEAN NOT NULL DEFAULT 0"))
+        if "extra_images" not in article_cols:
+            conn.execute(text("ALTER TABLE article ADD COLUMN extra_images TEXT"))
         # pavlenka@gmail.com es admin siempre, aunque se editara la BD a mano.
         conn.execute(text("UPDATE user SET is_admin = 1 WHERE email = :email"), {"email": ADMIN_EMAIL})
         conn.commit()

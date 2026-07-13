@@ -26,6 +26,8 @@ export default function ArticleCard({ article }: { article: Article }) {
   // El resumen extenso está guardado en BD: si ya se generó alguna vez,
   // se muestra directamente aunque se haya recargado la página.
   const [extended, setExtended] = useState<string | null>(article.extended_summary);
+  const [favorite, setFavorite] = useState(article.is_favorite);
+  const [gallery, setGallery] = useState<string[]>(article.extra_images);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +83,23 @@ export default function ArticleCard({ article }: { article: Article }) {
     onError: (e: Error) => setError(e.message),
   });
 
+  // Marcar favorita genera el informe extenso y extrae más fotos en el
+  // backend: la respuesta trae la noticia actualizada y refrescamos la tarjeta.
+  const favMut = useMutation({
+    mutationFn: () => api.favoriteArticle(article.id, !favorite),
+    onSuccess: (res) => {
+      setError(null);
+      setFavorite(res.is_favorite);
+      setGallery(res.extra_images);
+      setExtended(res.extended_summary);
+      article.is_favorite = res.is_favorite;
+      article.extra_images = res.extra_images;
+      article.extended_summary = res.extended_summary;
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+
   const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const emailMut = useMutation({
     mutationFn: () => api.emailArticle(article.id),
@@ -112,6 +131,18 @@ export default function ArticleCard({ article }: { article: Article }) {
         <span className="dot">·</span>
         <span className="time">{timeAgo(article.published_at)}</span>
         <button
+          className={`fav-btn${favorite ? " active" : ""}`}
+          title={
+            favorite
+              ? "Quitar de favoritas"
+              : "Guardar en favoritas: genera el informe completo y busca más fotos"
+          }
+          onClick={() => favMut.mutate()}
+          disabled={favMut.isPending}
+        >
+          {favMut.isPending ? "…" : favorite ? "★ Favorita" : "☆ Favorita"}
+        </button>
+        <button
           className="dismiss-btn"
           title="Quitar esta noticia del feed (se puede recuperar en Analizadas)"
           onClick={() => removeMut.mutate()}
@@ -127,6 +158,23 @@ export default function ArticleCard({ article }: { article: Article }) {
         <div className="card-summary-extended">
           <div className="file-label">Informe completo</div>
           <p className="card-summary">{extended}</p>
+        </div>
+      )}
+
+      {favorite && gallery.length > 0 && (
+        <div className="card-gallery">
+          {gallery.map((src) => (
+            <a key={src} href={src} target="_blank" rel="noreferrer">
+              <img
+                src={src}
+                alt=""
+                loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                }}
+              />
+            </a>
+          ))}
         </div>
       )}
 
