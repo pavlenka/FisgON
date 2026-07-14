@@ -271,11 +271,32 @@ h3 {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
+.brand-side {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
 .brand {
   font-family: var(--font-sans);
   font-weight: 800;
   font-size: 1.3rem;
   letter-spacing: -0.02em;
+}
+/* Botón de tema junto al logo: compacto, redondo. */
+.brand-side .theme-btn {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card);
+}
+.brand-side .theme-btn svg {
+  width: 16px;
+  height: 16px;
 }
 .topbar nav {
   display: flex;
@@ -343,28 +364,18 @@ h3 {
   color: var(--accent);
 }
 
-/* Botón de tema (sol/luna) en la barra del feed. */
-.theme-btn {
-  margin-left: auto;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--bg-card);
-}
-.theme-btn svg {
-  width: 17px;
-  height: 17px;
-}
 .mobile-refreshing {
   display: none;
 }
 
-/* Saltar de noticia en noticia (par de flechas flotante). */
+/* Saltar de noticia en noticia: par de flechas fijo a media altura, pegado
+   al borde derecho, donde cae el pulgar. */
 .article-nav {
+  position: fixed;
+  right: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-strong);
@@ -385,59 +396,121 @@ h3 {
   border-bottom: 1px solid var(--border);
 }
 
-/* La hoja del bloc: capa fija con perspectiva donde vive el clon animado. */
+/* La hoja del bloc: capa fija con perspectiva donde vive el clon animado.
+   La bisagra está en el borde superior (como un bloc encolado por arriba):
+   la hoja se agarra, se despega del taco y se arranca girando hacia ti y por
+   encima, mientras una sombra la recorre a medida que se curva. */
 .page-turn-layer {
   position: fixed;
   z-index: 60;
   pointer-events: none;
-  perspective: 1300px;
+  perspective: 1500px;
+  perspective-origin: 50% -8%;
 }
 .page-turn-layer .card {
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+  position: relative;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5);
+  will-change: transform, opacity, filter;
 }
+/* Sombra que se forma sobre la hoja al curvarse (va dentro del clon, así
+   gira con él). */
+.peel-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 58%);
+  opacity: 0;
+}
+
 @keyframes peel-out {
   0% {
-    transform: rotateX(0) rotateZ(0);
+    transform: translateY(0) rotateX(0deg) scale(1);
     opacity: 1;
+    filter: brightness(1);
   }
-  30% {
-    transform: rotateX(-38deg) rotateZ(1.6deg);
+  12% {
+    /* agarre: la hoja se despega un pelo del taco antes del tirón */
+    transform: translateY(-7px) rotateX(-5deg) scale(1.015);
     opacity: 1;
+    filter: brightness(1.04);
   }
-  70% {
-    transform: rotateX(-92deg) rotateZ(-2.5deg);
-    opacity: 0.9;
+  55% {
+    transform: translateY(-10px) rotateX(74deg) scale(0.99);
+    opacity: 1;
+    filter: brightness(0.9);
   }
   100% {
-    transform: rotateX(-128deg) rotateZ(-4deg) translateY(-2%);
+    transform: translateY(-30px) rotateX(158deg) scale(0.93);
     opacity: 0;
+    filter: brightness(0.62);
+  }
+}
+@keyframes peel-shade-out {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.06;
+  }
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.92;
   }
 }
 .peel-out {
-  transform-origin: 50% -6%;
+  transform-origin: 50% 0;
   backface-visibility: hidden;
-  animation: peel-out 0.52s cubic-bezier(0.5, 0.05, 0.7, 0.3) forwards;
+  animation: peel-out 0.64s cubic-bezier(0.36, 0.02, 0.22, 1) forwards;
 }
+.peel-out .peel-shade {
+  animation: peel-shade-out 0.64s cubic-bezier(0.36, 0.02, 0.22, 1) forwards;
+}
+
 @keyframes peel-in {
   0% {
-    transform: rotateX(-115deg) rotateZ(-3deg);
+    transform: translateY(-30px) rotateX(158deg) scale(0.93);
     opacity: 0;
+    filter: brightness(0.62);
   }
-  35% {
+  30% {
     opacity: 1;
   }
-  75% {
-    transform: rotateX(6deg) rotateZ(0.6deg);
+  72% {
+    /* rebote: la hoja se pasa un poco y se asienta sobre el taco */
+    transform: translateY(-3px) rotateX(-9deg) scale(1.012);
+    filter: brightness(1.05);
+  }
+  88% {
+    transform: translateY(0) rotateX(4deg) scale(1.003);
+    filter: brightness(1.01);
   }
   100% {
-    transform: rotateX(0) rotateZ(0);
+    transform: translateY(0) rotateX(0deg) scale(1);
     opacity: 1;
+    filter: brightness(1);
+  }
+}
+@keyframes peel-shade-in {
+  0% {
+    opacity: 0.92;
+  }
+  55% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
   }
 }
 .peel-in {
-  transform-origin: 50% -6%;
+  transform-origin: 50% 0;
   backface-visibility: hidden;
-  animation: peel-in 0.5s cubic-bezier(0.25, 0.9, 0.35, 1.05) forwards;
+  animation: peel-in 0.6s cubic-bezier(0.3, 0.9, 0.32, 1) forwards;
+}
+.peel-in .peel-shade {
+  animation: peel-shade-in 0.6s cubic-bezier(0.3, 0.9, 0.32, 1) forwards;
 }
 
 /* Acceso directo cuando el informe termina y ya no estás en la tarjeta. */

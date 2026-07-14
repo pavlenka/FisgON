@@ -1,5 +1,7 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { api } from "./api";
 import { useAuth } from "./auth";
+import { applyTheme, type Accent, type Theme } from "./theme";
 import LoginPage from "./pages/LoginPage";
 import FeedPage from "./pages/FeedPage";
 import FavoritesPage from "./pages/FavoritesPage";
@@ -58,14 +60,43 @@ const ICONS = {
 };
 
 function Shell() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const location = useLocation();
+
+  // Cambio rápido claro/oscuro, siempre a mano junto al logo.
+  const theme = (user?.pref_theme as Theme) ?? "dark";
+  function toggleTheme() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    applyTheme(next, (user?.pref_accent as Accent) ?? "amber");
+    api
+      .updateMe({ pref_theme: next })
+      .then(() => refreshUser())
+      .catch(() => {});
+  }
 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          Fisg<span className="on">ON</span>
+        <div className="brand-side">
+          <div className="brand">
+            Fisg<span className="on">ON</span>
+          </div>
+          <button
+            className="theme-btn"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+          >
+            {theme === "dark" ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <circle cx="12" cy="12" r="4.5" />
+                <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+              </svg>
+            )}
+          </button>
         </div>
         <nav>
           <NavLink to="/" end>

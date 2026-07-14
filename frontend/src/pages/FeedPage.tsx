@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
-import { useAuth } from "../auth";
-import { applyTheme, type Accent, type Theme } from "../theme";
 import { turnPage } from "../pageTurn";
 import ArticleCard from "../components/ArticleCard";
 import SkeletonCard from "../components/SkeletonCard";
@@ -13,7 +11,6 @@ type View = "feed" | "all" | number;
 
 export default function FeedPage() {
   const queryClient = useQueryClient();
-  const { user, refreshUser } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
@@ -158,17 +155,6 @@ export default function FeedPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Cambio rápido claro/oscuro desde el propio feed (también está en Cuenta).
-  const theme = (user?.pref_theme as Theme) ?? "dark";
-  function toggleTheme() {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    applyTheme(next, (user?.pref_accent as Accent) ?? "amber");
-    api
-      .updateMe({ pref_theme: next })
-      .then(() => refreshUser())
-      .catch(() => {});
-  }
-
   const articles: Article[] = data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
@@ -189,22 +175,6 @@ export default function FeedPage() {
           </span>
         )}
         {refreshMsg && <span className="muted">{refreshMsg}</span>}
-        <button
-          className="theme-btn"
-          onClick={toggleTheme}
-          title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
-        >
-          {theme === "dark" ? (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <circle cx="12" cy="12" r="4.5" />
-              <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
-            </svg>
-          )}
-        </button>
       </div>
 
       {orderedSources.length > 0 && (
@@ -261,23 +231,25 @@ export default function FeedPage() {
       <div ref={sentinel} />
       {isFetchingNextPage && <SkeletonCard />}
 
-      {/* Controles fijos: quitar el filtro activo, saltar de noticia en
-          noticia (con la hoja del bloc) y volver al principio. */}
+      {/* Flechas de saltar de noticia: fijas a media altura, donde cae el
+          pulgar. La hoja del bloc se anima al saltar. */}
+      {articles.length > 0 && (
+        <div className="article-nav">
+          <button onClick={() => turnPage(-1)} title="Noticia anterior">
+            ▲
+          </button>
+          <button onClick={() => turnPage(1)} title="Noticia siguiente">
+            ▼
+          </button>
+        </div>
+      )}
+
+      {/* Controles fijos: quitar el filtro activo y volver al principio. */}
       <div className="floating-controls">
         {typeof view === "number" && (
           <button className="chip active" onClick={() => selectView("feed")} title="Quitar el filtro de fuente">
             ✕ {orderedSources.find((s) => s.id === view)?.name ?? "Filtro"}
           </button>
-        )}
-        {articles.length > 0 && (
-          <div className="article-nav">
-            <button onClick={() => turnPage(-1)} title="Noticia anterior">
-              ▲
-            </button>
-            <button onClick={() => turnPage(1)} title="Noticia siguiente">
-              ▼
-            </button>
-          </div>
         )}
         {showTop && (
           <button
