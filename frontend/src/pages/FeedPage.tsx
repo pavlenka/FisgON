@@ -31,6 +31,14 @@ export default function FeedPage() {
     }
   }
 
+  // Botón fijo para volver al principio: aparece en cuanto bajas un poco.
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
     queryKey: ["feed", sourceId],
     queryFn: ({ pageParam }) => api.getFeed(pageParam, sourceId),
@@ -128,6 +136,25 @@ export default function FeedPage() {
 
       <div ref={sentinel} />
       {isFetchingNextPage && <SkeletonCard />}
+
+      {/* Controles fijos: quitar el filtro activo y volver al principio sin
+          tener que subir a mano hasta los chips. */}
+      <div className="floating-controls">
+        {sourceId !== null && (
+          <button className="chip active" onClick={() => selectSource(null)} title="Quitar el filtro de fuente">
+            ✕ {orderedSources.find((s) => s.id === sourceId)?.name ?? "Filtro"}
+          </button>
+        )}
+        {showTop && (
+          <button
+            className="to-top"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            title="Volver al principio"
+          >
+            ↑
+          </button>
+        )}
+      </div>
     </div>
   );
 }

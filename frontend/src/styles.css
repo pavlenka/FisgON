@@ -292,6 +292,39 @@ h3 {
   color: var(--accent-ink);
 }
 
+/* Controles fijos abajo a la derecha: quitar el filtro y volver arriba. */
+.floating-controls {
+  position: fixed;
+  right: 1rem;
+  bottom: 1.2rem;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.floating-controls .chip {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+  animation: section-in 0.2s ease;
+}
+.to-top {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1.1rem;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+  animation: section-in 0.2s ease;
+}
+.to-top:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
 /* ---------- Animaciones: que se entienda qué está pasando ---------- */
 @keyframes page-in {
   from {
@@ -855,6 +888,10 @@ h3 {
   /* Hueco para que la barra no tape el final del contenido. */
   .content {
     padding-bottom: calc(4.2rem + env(safe-area-inset-bottom));
+  }
+  /* Los controles fijos suben para no quedar bajo la barra de pestañas. */
+  .floating-controls {
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
   }
 }
 

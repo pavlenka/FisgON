@@ -38,24 +38,30 @@ export default function ArticleCard({ article }: { article: Article }) {
   const [error, setError] = useState<string | null>(null);
 
   // Al pasar la tarjeta entera (su borde inferior sale por arriba de la
-  // pantalla), se marca leída sola. Solo hacia adelante: desmarcarla es manual.
+  // pantalla), se marca leída sola. Comprobación directa sobre el scroll
+  // (con rAF para no medir más de una vez por frame): más fiable que un
+  // IntersectionObserver, que agrupa eventos en scrolls rápidos y podía
+  // perderse la salida. Solo hacia adelante: desmarcarla es manual.
   const cardRef = useRef<HTMLElement | null>(null);
   const readRef = useRef(read);
   readRef.current = read;
   useEffect(() => {
     const node = cardRef.current;
     if (!node || readRef.current) return;
-    const observer = new IntersectionObserver((entries) => {
-      const e = entries[0];
-      if (!e.isIntersecting && e.boundingClientRect.bottom < 0 && !readRef.current) {
+    const onScroll = () => {
+      if (readRef.current) {
+        window.removeEventListener("scroll", onScroll);
+        return;
+      }
+      if (node.getBoundingClientRect().bottom < 0) {
         setRead(true);
         article.is_read = true;
         queueMarkRead(article.id);
-        observer.disconnect();
+        window.removeEventListener("scroll", onScroll);
       }
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
