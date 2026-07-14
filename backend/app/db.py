@@ -51,6 +51,11 @@ def init_db() -> None:
             conn.execute(text("ALTER TABLE article ADD COLUMN is_favorite BOOLEAN NOT NULL DEFAULT 0"))
         if "extra_images" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN extra_images TEXT"))
+        if "is_read" not in article_cols:
+            # Las noticias que ya estaban en la BD nacen leídas: si no, tras el
+            # despliegue todo el feed aparecería con el marco de "no leída".
+            conn.execute(text("ALTER TABLE article ADD COLUMN is_read BOOLEAN NOT NULL DEFAULT 0"))
+            conn.execute(text("UPDATE article SET is_read = 1"))
         # pavlenka@gmail.com es admin siempre, aunque se editara la BD a mano.
         conn.execute(text("UPDATE user SET is_admin = 1 WHERE email = :email"), {"email": ADMIN_EMAIL})
         conn.commit()

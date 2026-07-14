@@ -128,6 +128,7 @@ class ArticleOut(BaseModel):
     is_favorite: bool
     # Fotos adicionales del artículo, extraídas al marcarla favorita.
     extra_images: list[str]
+    is_read: bool
     published_at: datetime
 
 
@@ -142,6 +143,12 @@ class ExpandedSummary(BaseModel):
 
 class FavoriteRequest(BaseModel):
     favorite: bool
+
+
+class ReadRequest(BaseModel):
+    # En lote: el feed marca varias de golpe al ir pasando tarjetas.
+    article_ids: list[int]
+    read: bool
 
 
 class AskRequest(BaseModel):

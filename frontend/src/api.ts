@@ -110,6 +110,7 @@ export interface Article {
   is_favorite: boolean;
   // Fotos adicionales del artículo, extraídas al marcarla favorita.
   extra_images: string[];
+  is_read: boolean;
   published_at: string;
 }
 
@@ -196,6 +197,25 @@ export interface DashboardSummary {
   by_kind: KindBreakdown[];
 }
 
+// Al pasar tarjetas en el feed, cada una se marca leída: se acumulan aquí y
+// se envían en un solo lote un segundo después, en vez de una petición por
+// noticia.
+const pendingRead = new Set<number>();
+let readFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function queueMarkRead(id: number) {
+  pendingRead.add(id);
+  if (readFlushTimer) return;
+  readFlushTimer = setTimeout(() => {
+    const ids = [...pendingRead];
+    pendingRead.clear();
+    readFlushTimer = null;
+    api.markArticlesRead(ids, true).catch(() => {
+      /* sin conexión: se reintentará cuando vuelvan a pasar por pantalla */
+    });
+  }, 1000);
+}
+
 export const api = {
   verifyEmail: (token: string) =>
     apiFetch("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }) as Promise<{ message: string }>,
@@ -257,6 +277,8 @@ export const api = {
       }`
     ) as Promise<FeedPage>,
   sourceFilterHit: (id: number) => apiFetch(`/sources/${id}/filter-hit`, { method: "POST" }),
+  markArticlesRead: (article_ids: number[], read: boolean) =>
+    apiFetch("/articles/read", { method: "POST", body: JSON.stringify({ article_ids, read }) }),
   getFavorites: (cursor?: string | null) =>
     apiFetch(`/articles/favorites?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
   favoriteArticle: (id: number, favorite: boolean) =>

@@ -91,6 +91,9 @@ class Article(SQLModel, table=True):
     # extraen más fotos del artículo (extra_images, lista JSON de URLs).
     is_favorite: bool = False
     extra_images: str | None = None
+    # Leída: se marca sola al pasar la tarjeta entera en el feed, o a mano.
+    # Las no leídas se muestran con un marco de color.
+    is_read: bool = False
     published_at: datetime = Field(index=True)
     fetched_at: datetime = Field(default_factory=utcnow)
 

@@ -22,6 +22,7 @@ from .schemas import (
     FavoriteRequest,
     FeedPage,
     Message,
+    ReadRequest,
     ReviewRequest,
 )
 
@@ -65,6 +66,7 @@ def _article_out(article: Article, source_name: str) -> ArticleOut:
         interesting_score=article.interesting_score,
         is_favorite=article.is_favorite,
         extra_images=json.loads(article.extra_images) if article.extra_images else [],
+        is_read=article.is_read,
         published_at=article.published_at,
     )
 
@@ -137,6 +139,25 @@ def get_favorites(
     items = [_article_out(article, source_name) for article, source_name in rows]
     next_cursor = _encode_cursor(rows[-1][0]) if has_more and rows else None
     return FeedPage(items=items, next_cursor=next_cursor)
+
+
+@router.post("/articles/read", status_code=status.HTTP_204_NO_CONTENT)
+def mark_read(
+    data: ReadRequest,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> None:
+    """Marca leídas (o no leídas) varias noticias de golpe. El feed las marca
+    en lote al ir pasando tarjetas; el botón de la tarjeta manda una sola."""
+    if not data.article_ids:
+        return
+    own_sources = select(Source.id).where(Source.user_id == user.id)
+    session.exec(
+        update(Article)
+        .where(Article.id.in_(data.article_ids), Article.source_id.in_(own_sources))
+        .values(is_read=data.read)
+    )
+    session.commit()
 
 
 @router.post("/articles/{article_id}/favorite", response_model=ArticleOut)

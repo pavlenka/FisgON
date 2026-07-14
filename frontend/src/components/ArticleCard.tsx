@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type Article } from "../api";
+import { api, queueMarkRead, type Article } from "../api";
 import { useAuth } from "../auth";
 
 // Las fechas del backend son UTC naive (sin zona); las tratamos como UTC.
@@ -33,8 +33,38 @@ export default function ArticleCard({ article }: { article: Article }) {
   const [reportOpen, setReportOpen] = useState(user?.pref_extended_open ?? true);
   const [favorite, setFavorite] = useState(article.is_favorite);
   const [gallery, setGallery] = useState<string[]>(article.extra_images);
+  const [read, setRead] = useState(article.is_read);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Al pasar la tarjeta entera (su borde inferior sale por arriba de la
+  // pantalla), se marca leída sola. Solo hacia adelante: desmarcarla es manual.
+  const cardRef = useRef<HTMLElement | null>(null);
+  const readRef = useRef(read);
+  readRef.current = read;
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node || readRef.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      const e = entries[0];
+      if (!e.isIntersecting && e.boundingClientRect.bottom < 0 && !readRef.current) {
+        setRead(true);
+        article.is_read = true;
+        queueMarkRead(article.id);
+        observer.disconnect();
+      }
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function toggleRead() {
+    const next = !read;
+    setRead(next);
+    article.is_read = next;
+    api.markArticlesRead([article.id], next).catch(() => {});
+  }
 
   const [asking, setAsking] = useState(false);
   const [question, setQuestion] = useState("");
@@ -131,7 +161,7 @@ export default function ArticleCard({ article }: { article: Article }) {
   });
 
   return (
-    <article className="card">
+    <article className={`card${read ? "" : " unread"}`} ref={cardRef}>
       {article.image_url && (
         <img
           className="card-image"
@@ -148,6 +178,13 @@ export default function ArticleCard({ article }: { article: Article }) {
         <span className="dot">·</span>
         <span className="time">{timeAgo(article.published_at)}</span>
         <span className="card-meta-actions">
+          <button
+            className={`read-btn${read ? "" : " unread"}`}
+            title={read ? "Marcar como no leída" : "Marcar como leída"}
+            onClick={toggleRead}
+          >
+            {read ? "✓ Leída" : "● No leída"}
+          </button>
           <button
             className={`fav-btn${favorite ? " active" : ""}`}
             title={
