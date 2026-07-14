@@ -77,10 +77,44 @@ function Shell() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand-side">
-          <div className="brand">
-            Fisg<span className="on">ON</span>
-          </div>
+        <div className="brand">
+          Fisg<span className="on">ON</span>
+        </div>
+        <div className="topbar-right">
+          <nav>
+            <NavLink to="/" end>
+              {ICONS.feed}
+              Noticias
+            </NavLink>
+            <NavLink to="/favoritas">
+              {ICONS.favorites}
+              Leer más tarde
+            </NavLink>
+            <NavLink to="/fuentes">
+              {ICONS.sources}
+              Fuentes
+            </NavLink>
+            <NavLink to="/analizadas">
+              {ICONS.analyzed}
+              Analizadas
+            </NavLink>
+            {user?.is_admin && (
+              <NavLink to="/dashboard">
+                {ICONS.dashboard}
+                Dashboard
+              </NavLink>
+            )}
+            {user && (
+              <NavLink to="/cuenta" className="user-name">
+                {ICONS.account}
+                {user.name}
+              </NavLink>
+            )}
+            <button className="link-btn" onClick={logout}>
+              {ICONS.logout}
+              Salir
+            </button>
+          </nav>
           <button
             className="theme-btn"
             onClick={toggleTheme}
@@ -98,40 +132,6 @@ function Shell() {
             )}
           </button>
         </div>
-        <nav>
-          <NavLink to="/" end>
-            {ICONS.feed}
-            Noticias
-          </NavLink>
-          <NavLink to="/favoritas">
-            {ICONS.favorites}
-            Leer más tarde
-          </NavLink>
-          <NavLink to="/fuentes">
-            {ICONS.sources}
-            Fuentes
-          </NavLink>
-          <NavLink to="/analizadas">
-            {ICONS.analyzed}
-            Analizadas
-          </NavLink>
-          {user?.is_admin && (
-            <NavLink to="/dashboard">
-              {ICONS.dashboard}
-              Dashboard
-            </NavLink>
-          )}
-          {user && (
-            <NavLink to="/cuenta" className="user-name">
-              {ICONS.account}
-              {user.name}
-            </NavLink>
-          )}
-          <button className="link-btn" onClick={logout}>
-            {ICONS.logout}
-            Salir
-          </button>
-        </nav>
       </header>
       <main className="content">
         {/* key por ruta: cada página entra con un fundido corto */}

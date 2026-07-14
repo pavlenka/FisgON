@@ -10,7 +10,7 @@
 
 // Separación entre el borde superior del viewport y la tarjeta al aterrizar.
 const READING_OFFSET = 78;
-const PEEL_MS = 640;
+const PEEL_MS = 400;
 
 function cards(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(".feed .card:not(.skeleton-card)")];
@@ -35,10 +35,6 @@ function makeLayer(card: HTMLElement, rect: DOMRect): { layer: HTMLDivElement; c
   const clone = card.cloneNode(true) as HTMLElement;
   clone.style.width = "100%";
   clone.style.margin = "0";
-  // Capa de sombra que se curva con la hoja para dar sensación de papel.
-  const shade = document.createElement("div");
-  shade.className = "peel-shade";
-  clone.appendChild(shade);
   layer.appendChild(clone);
   document.body.appendChild(layer);
   return { layer, clone };

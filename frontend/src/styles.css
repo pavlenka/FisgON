@@ -271,19 +271,21 @@ h3 {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
-.brand-side {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
 .brand {
   font-family: var(--font-sans);
   font-weight: 800;
   font-size: 1.3rem;
   letter-spacing: -0.02em;
 }
-/* Botón de tema junto al logo: compacto, redondo. */
-.brand-side .theme-btn {
+/* Grupo derecho de la cabecera: menú + botón de tema al extremo. En móvil
+   el menú se oculta (barra de pestañas) pero el botón de tema se queda. */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-left: auto;
+}
+.topbar-right .theme-btn {
   width: 32px;
   height: 32px;
   margin: 0;
@@ -294,7 +296,7 @@ h3 {
   border-radius: 50%;
   background: var(--bg-card);
 }
-.brand-side .theme-btn svg {
+.topbar-right .theme-btn svg {
   width: 16px;
   height: 16px;
 }
@@ -372,145 +374,73 @@ h3 {
    al borde derecho, donde cae el pulgar. */
 .article-nav {
   position: fixed;
-  right: 0.9rem;
+  right: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
   z-index: 15;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-strong);
-  border-radius: 21px;
-  overflow: hidden;
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+  gap: 0.4rem;
 }
+/* Muy transparentes en reposo; se afianzan al pasar por encima o tocar. */
 .article-nav button {
-  width: 42px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: none;
-  border-radius: 0;
-  background: var(--bg-elev);
-  font-size: 0.75rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg-elev) 22%, transparent);
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+  font-size: 0.8rem;
+  opacity: 0.35;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
-.article-nav button:first-child {
-  border-bottom: 1px solid var(--border);
+.article-nav button:hover:not(:disabled),
+.article-nav button:active {
+  opacity: 1;
+  background: var(--bg-elev);
+  color: var(--text);
 }
 
-/* La hoja del bloc: capa fija con perspectiva donde vive el clon animado.
-   La bisagra está en el borde superior (como un bloc encolado por arriba):
-   la hoja se agarra, se despega del taco y se arranca girando hacia ti y por
-   encima, mientras una sombra la recorre a medida que se curva. */
+/* Al cambiar de noticia, la tarjeta actual se desliza suavemente hacia
+   arriba y se desvanece; al retroceder, entra bajando desde arriba. Capa
+   fija con un clon para que el scroll no pelee con la animación. */
 .page-turn-layer {
   position: fixed;
   z-index: 60;
   pointer-events: none;
-  perspective: 1500px;
-  perspective-origin: 50% -8%;
 }
 .page-turn-layer .card {
-  position: relative;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.5);
-  will-change: transform, opacity, filter;
-}
-/* Sombra que se forma sobre la hoja al curvarse (va dentro del clon, así
-   gira con él). */
-.peel-shade {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 4px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 58%);
-  opacity: 0;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.4);
+  will-change: transform, opacity;
 }
 
 @keyframes peel-out {
   0% {
-    transform: translateY(0) rotateX(0deg) scale(1);
+    transform: translateY(0);
     opacity: 1;
-    filter: brightness(1);
-  }
-  12% {
-    /* agarre: la hoja se despega un pelo del taco antes del tirón */
-    transform: translateY(-7px) rotateX(-5deg) scale(1.015);
-    opacity: 1;
-    filter: brightness(1.04);
-  }
-  55% {
-    transform: translateY(-10px) rotateX(74deg) scale(0.99);
-    opacity: 1;
-    filter: brightness(0.9);
   }
   100% {
-    transform: translateY(-30px) rotateX(158deg) scale(0.93);
+    transform: translateY(-42px);
     opacity: 0;
-    filter: brightness(0.62);
-  }
-}
-@keyframes peel-shade-out {
-  0% {
-    opacity: 0;
-  }
-  12% {
-    opacity: 0.06;
-  }
-  55% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0.92;
   }
 }
 .peel-out {
-  transform-origin: 50% 0;
-  backface-visibility: hidden;
-  animation: peel-out 0.64s cubic-bezier(0.36, 0.02, 0.22, 1) forwards;
-}
-.peel-out .peel-shade {
-  animation: peel-shade-out 0.64s cubic-bezier(0.36, 0.02, 0.22, 1) forwards;
+  animation: peel-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 @keyframes peel-in {
   0% {
-    transform: translateY(-30px) rotateX(158deg) scale(0.93);
+    transform: translateY(-42px);
     opacity: 0;
-    filter: brightness(0.62);
-  }
-  30% {
-    opacity: 1;
-  }
-  72% {
-    /* rebote: la hoja se pasa un poco y se asienta sobre el taco */
-    transform: translateY(-3px) rotateX(-9deg) scale(1.012);
-    filter: brightness(1.05);
-  }
-  88% {
-    transform: translateY(0) rotateX(4deg) scale(1.003);
-    filter: brightness(1.01);
   }
   100% {
-    transform: translateY(0) rotateX(0deg) scale(1);
+    transform: translateY(0);
     opacity: 1;
-    filter: brightness(1);
-  }
-}
-@keyframes peel-shade-in {
-  0% {
-    opacity: 0.92;
-  }
-  55% {
-    opacity: 0.22;
-  }
-  100% {
-    opacity: 0;
   }
 }
 .peel-in {
-  transform-origin: 50% 0;
-  backface-visibility: hidden;
-  animation: peel-in 0.6s cubic-bezier(0.3, 0.9, 0.32, 1) forwards;
-}
-.peel-in .peel-shade {
-  animation: peel-shade-in 0.6s cubic-bezier(0.3, 0.9, 0.32, 1) forwards;
+  animation: peel-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* Acceso directo cuando el informe termina y ya no estás en la tarjeta. */
