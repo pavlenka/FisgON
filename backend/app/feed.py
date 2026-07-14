@@ -192,7 +192,7 @@ def favorite_article(
     want_extended = user.pref_favorite_extended and not article.extended_summary
     want_images = user.pref_favorite_images and article.extra_images is None
     if data.favorite and (want_extended or want_images):
-        article_data = ingest.extract_article(article.link)
+        article_data = ingest.extract_article(article.link, with_images=want_images)
         if want_extended:
             article.extended_summary = llm.expand_summary(
                 source.topics,

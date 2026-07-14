@@ -181,11 +181,26 @@ _IMG_PHOTO = re.compile(r"\.(jpe?g|png|webp|avif)([?#]|$)", re.IGNORECASE)
 
 
 def _article_images(html: str, base_url: str, limit: int = 6) -> list[str]:
-    """Fotos del cuerpo del artículo (heurística sobre las <img> de la página)."""
+    """Fotos SOLO del cuerpo del artículo.
+
+    Se delimita el contenido principal con trafilatura (igual que el texto):
+    fuera quedan los "relacionados", laterales, portadas de otros artículos y
+    miniaturas de vídeos, que era de donde venían fotos que no tenían nada
+    que ver con la noticia. Si el cuerpo no trae fotos, no hay galería.
+    """
+    content = trafilatura.extract(
+        html,
+        include_comments=False,
+        include_tables=False,
+        include_images=True,
+        output_format="markdown",
+    )
+    if not content:
+        return []
     seen: set[str] = set()
     images: list[str] = []
-    # data-src primero: los CMS con carga perezosa ponen un placeholder en src.
-    for match in re.finditer(r'<img[^>]+?(?:data-src|src)=["\']([^"\']+)["\']', html, flags=re.IGNORECASE):
+    # En markdown las imágenes del cuerpo salen como ![alt](url)
+    for match in re.finditer(r"!\[[^\]]*\]\(([^)\s\"]+)", content):
         src = urljoin(base_url, match.group(1).strip())
         if not src.startswith(("http://", "https://")):
             continue
@@ -200,12 +215,13 @@ def _article_images(html: str, base_url: str, limit: int = 6) -> list[str]:
     return images
 
 
-def extract_article(link: str) -> dict:
+def extract_article(link: str, with_images: bool = False) -> dict:
     """Descarga el artículo una vez y devuelve {text, image, images}.
 
     text: contenido principal (truncado), para dar contexto a la IA.
     image: og:image de la página, como respaldo si el feed no traía imagen.
-    images: más fotos del artículo (para la galería de favoritas).
+    images: fotos del cuerpo (solo si with_images: delimitar el contenido
+    cuesta un segundo parseo y solo hace falta para la galería).
     """
     if not link:
         return {"text": "", "image": None, "images": []}
@@ -221,5 +237,5 @@ def extract_article(link: str) -> dict:
     return {
         "text": (text or "")[: settings.article_max_chars],
         "image": _og_image(resp.text),
-        "images": _article_images(resp.text, link),
+        "images": _article_images(resp.text, link) if with_images else [],
     }
