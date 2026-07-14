@@ -57,11 +57,22 @@ export interface AuthUser {
   pref_favorite_images: boolean;
   pref_email_extended: boolean;
   pref_extended_open: boolean;
+  pref_theme: string;
+  pref_accent: string;
 }
 
 // Campos editables de la cuenta (nombre y preferencias), todos opcionales.
 export type UserPatch = Partial<
-  Pick<AuthUser, "name" | "pref_favorite_extended" | "pref_favorite_images" | "pref_email_extended" | "pref_extended_open">
+  Pick<
+    AuthUser,
+    | "name"
+    | "pref_favorite_extended"
+    | "pref_favorite_images"
+    | "pref_email_extended"
+    | "pref_extended_open"
+    | "pref_theme"
+    | "pref_accent"
+  >
 >;
 
 export interface AdminUser {
@@ -83,7 +94,8 @@ export interface Source {
   topics: string;
   vetoed_topics: string;
   active: boolean;
-  max_age_days: number;
+  // Si la fuente entra en el feed inicial (chip "Feed").
+  in_feed: boolean;
   // Veces que se ha filtrado el feed por esta fuente (ordena los chips).
   filter_count: number;
   last_fetched_at: string | null;
@@ -250,7 +262,6 @@ export const api = {
     feed_url: string;
     name: string;
     topics: string;
-    max_age_days: number;
   }) => apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
   updateSource: (
     id: number,
@@ -261,17 +272,17 @@ export const api = {
       topics: string;
       vetoed_topics: string;
       active: boolean;
-      max_age_days: number;
+      in_feed: boolean;
     }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),
   refresh: () => apiFetch("/sources/refresh", { method: "POST" }),
   refreshStatus: () => apiFetch("/sources/refresh/status") as Promise<RefreshStatus>,
-  getFeed: (cursor?: string | null, sourceId?: number | null) =>
+  getFeed: (cursor?: string | null, opts?: { sourceId?: number | null; all?: boolean; unreadOnly?: boolean }) =>
     apiFetch(
       `/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${
-        sourceId ? `&source_id=${sourceId}` : ""
-      }`
+        opts?.sourceId ? `&source_id=${opts.sourceId}` : ""
+      }${opts?.all ? "&include_all=true" : ""}${opts?.unreadOnly ? "&unread_only=true" : ""}`
     ) as Promise<FeedPage>,
   sourceFilterHit: (id: number) => apiFetch(`/sources/${id}/filter-hit`, { method: "POST" }),
   markArticlesRead: (article_ids: number[], read: boolean) =>

@@ -48,7 +48,8 @@ def process_source(session: Session, source: Source) -> int:
     """Procesa una fuente y devuelve cuántas noticias nuevas se han guardado."""
     new_count = 0
     entries = ingest.fetch_entries(source.feed_url, settings.max_entries_per_source)
-    cutoff = datetime.utcnow() - timedelta(days=source.max_age_days)
+    # Ventana fija de ingesta: no compensa configurarla por fuente.
+    cutoff = datetime.utcnow() - timedelta(days=7)
     recent_titles = _recent_feed_titles(session, source.user_id)
 
     for entry in entries:

@@ -8,7 +8,7 @@ interface EditForm {
   feed_url: string;
   topics: string;
   vetoed_topics: string;
-  max_age_days: number;
+  in_feed: boolean;
 }
 
 function toEditForm(s: Source): EditForm {
@@ -18,7 +18,7 @@ function toEditForm(s: Source): EditForm {
     feed_url: s.feed_url,
     topics: s.topics,
     vetoed_topics: s.vetoed_topics,
-    max_age_days: s.max_age_days,
+    in_feed: s.in_feed,
   };
 }
 
@@ -30,7 +30,6 @@ export default function SourcesPage() {
   const [detected, setDetected] = useState<DetectResult | null>(null);
   const [name, setName] = useState("");
   const [topics, setTopics] = useState("");
-  const [maxAgeDays, setMaxAgeDays] = useState(7);
   const [err, setErr] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -55,14 +54,12 @@ export default function SourcesPage() {
         feed_url: detected!.feed_url,
         name,
         topics,
-        max_age_days: maxAgeDays,
       }),
     onSuccess: () => {
       setUrl("");
       setDetected(null);
       setName("");
       setTopics("");
-      setMaxAgeDays(7);
       setErr(null);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
     },
@@ -117,16 +114,6 @@ export default function SourcesPage() {
               Temas (separados por coma)
               <input value={topics} onChange={(e) => setTopics(e.target.value)} />
             </label>
-            <label>
-              Días de antigüedad máxima
-              <input
-                type="number"
-                min={1}
-                max={365}
-                value={maxAgeDays}
-                onChange={(e) => setMaxAgeDays(Number(e.target.value))}
-              />
-            </label>
             <p className="muted">Solo se mostrarán noticias sobre estos temas. Feed: {detected.feed_url}</p>
             <button onClick={() => createMut.mutate()} disabled={!topics.trim() || createMut.isPending}>
               {createMut.isPending ? "Guardando…" : "Guardar web"}
@@ -178,15 +165,16 @@ export default function SourcesPage() {
                     onChange={(e) => setEditForm({ ...editForm, vetoed_topics: e.target.value })}
                   />
                 </label>
-                <label>
-                  Días de antigüedad máxima
+                <label className="pref-row">
                   <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={editForm.max_age_days}
-                    onChange={(e) => setEditForm({ ...editForm, max_age_days: Number(e.target.value) })}
+                    type="checkbox"
+                    checked={editForm.in_feed}
+                    onChange={(e) => setEditForm({ ...editForm, in_feed: e.target.checked })}
                   />
+                  <span>
+                    En el feed inicial
+                    <small>Si lo apagas, sus noticias solo salen con el chip "Todas" o filtrando por la fuente.</small>
+                  </span>
                 </label>
                 {editErr && <p className="error">{editErr}</p>}
                 <div className="row">
@@ -215,7 +203,7 @@ export default function SourcesPage() {
                   <div className="muted">{s.topics}</div>
                   {s.vetoed_topics && <div className="muted vetoed-line">Vetados: {s.vetoed_topics}</div>}
                   <div className="muted">
-                    Últimos {s.max_age_days} días
+                    {s.in_feed ? "En el feed" : "Fuera del feed"}
                     {" · "}
                     <button
                       className="link-btn"

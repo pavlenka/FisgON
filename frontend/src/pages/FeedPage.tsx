@@ -1,18 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
+import { useAuth } from "../auth";
+import { applyTheme, type Accent, type Theme } from "../theme";
+import { turnPage } from "../pageTurn";
 import ArticleCard from "../components/ArticleCard";
 import SkeletonCard from "../components/SkeletonCard";
 
+// Vista del feed: "feed" = fuentes marcadas para el feed inicial,
+// "all" = todas las fuentes, número = una fuente concreta.
+type View = "feed" | "all" | number;
+
 export default function FeedPage() {
   const queryClient = useQueryClient();
+  const { user, refreshUser } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
-  // Filtro por fuente: null = todas. Los chips se ordenan por uso (las más
-  // filtradas primero); el orden se congela al montar para que no bailen
-  // bajo el dedo, y se recalcula en la próxima visita.
-  const [sourceId, setSourceId] = useState<number | null>(null);
+  const [view, setView] = useState<View>("feed");
+  const [unreadOnly, setUnreadOnly] = useState(false);
+
+  // Los chips se ordenan por uso (las más filtradas primero); el orden se
+  // congela al montar para que no bailen bajo el dedo.
   const { data: sources } = useQuery({ queryKey: ["sources"], queryFn: api.listSources });
   const orderedSources = useMemo(
     () =>
@@ -23,25 +32,22 @@ export default function FeedPage() {
     [sources !== undefined]
   );
 
-  function selectSource(id: number | null) {
-    setSourceId(id);
-    if (id !== null) {
+  function selectView(next: View) {
+    setView(next);
+    if (typeof next === "number") {
       // Anotamos el uso para el orden futuro; si falla no pasa nada.
-      api.sourceFilterHit(id).catch(() => {});
+      api.sourceFilterHit(next).catch(() => {});
     }
   }
 
-  // Botón fijo para volver al principio: aparece en cuanto bajas un poco.
-  const [showTop, setShowTop] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setShowTop(window.scrollY > 500);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey: ["feed", sourceId],
-    queryFn: ({ pageParam }) => api.getFeed(pageParam, sourceId),
+    queryKey: ["feed", view, unreadOnly],
+    queryFn: ({ pageParam }) =>
+      api.getFeed(pageParam, {
+        sourceId: typeof view === "number" ? view : null,
+        all: view === "all",
+        unreadOnly,
+      }),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.next_cursor,
   });
@@ -63,6 +69,7 @@ export default function FeedPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   async function handleRefresh() {
+    if (refreshing) return;
     setRefreshing(true);
     setRefreshMsg(null);
     try {
@@ -83,29 +90,143 @@ export default function FeedPage() {
       setRefreshing(false);
     }
   }
+  const refreshRef = useRef(handleRefresh);
+  refreshRef.current = handleRefresh;
+
+  // Tirar hacia abajo desde arriba del todo para refrescar (móvil): sustituye
+  // al botón "Actualizar", que en pantallas pequeñas se oculta.
+  const [pull, setPull] = useState(0);
+  useEffect(() => {
+    let startY = 0;
+    let pulling = false;
+    const onStart = (e: TouchEvent) => {
+      pulling = window.scrollY <= 0;
+      if (pulling) startY = e.touches[0].clientY;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 8 && window.scrollY <= 0) {
+        // Resistencia: la banda crece a la mitad del gesto, con tope.
+        setPull(Math.min((dy - 8) * 0.5, 110));
+        if (e.cancelable) e.preventDefault();
+      } else {
+        setPull(0);
+      }
+    };
+    const onEnd = () => {
+      if (!pulling) return;
+      pulling = false;
+      setPull((p) => {
+        if (p > 70) refreshRef.current();
+        return 0;
+      });
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, []);
+
+  // Botón fijo para volver al principio: aparece en cuanto bajas un poco.
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Flechas del teclado para saltar de noticia en noticia (con la animación
+  // de pasar hoja). En móvil, los botones flotantes hacen lo mismo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        turnPage(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        turnPage(-1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Cambio rápido claro/oscuro desde el propio feed (también está en Cuenta).
+  const theme = (user?.pref_theme as Theme) ?? "dark";
+  function toggleTheme() {
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    applyTheme(next, (user?.pref_accent as Accent) ?? "amber");
+    api
+      .updateMe({ pref_theme: next })
+      .then(() => refreshUser())
+      .catch(() => {});
+  }
 
   const articles: Article[] = data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
     <div className="feed">
+      {/* Banda del gesto de tirar para refrescar */}
+      <div className="ptr" style={{ height: pull }} aria-hidden="true">
+        <span className={`ptr-arrow${pull > 70 ? " ready" : ""}`}>↓</span>
+      </div>
+
       <div className="feed-toolbar">
-        <button onClick={handleRefresh} disabled={refreshing}>
+        <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
           {refreshing && <span className="spinner" />}
           {refreshing ? "Actualizando…" : "Actualizar"}
         </button>
+        {refreshing && (
+          <span className="muted mobile-refreshing">
+            <span className="spinner" /> Actualizando…
+          </span>
+        )}
         {refreshMsg && <span className="muted">{refreshMsg}</span>}
+        <button
+          className="theme-btn"
+          onClick={toggleTheme}
+          title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+        >
+          {theme === "dark" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <circle cx="12" cy="12" r="4.5" />
+              <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5 5l1.8 1.8M17.2 17.2 19 19M19 5l-1.8 1.8M6.8 17.2 5 19" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+            </svg>
+          )}
+        </button>
       </div>
 
-      {orderedSources.length > 1 && (
+      {orderedSources.length > 0 && (
         <div className="source-chips">
-          <button className={`chip${sourceId === null ? " active" : ""}`} onClick={() => selectSource(null)}>
+          <button className={`chip${view === "feed" ? " active" : ""}`} onClick={() => selectView("feed")}>
+            Feed
+          </button>
+          <button className={`chip${view === "all" ? " active" : ""}`} onClick={() => selectView("all")}>
             Todas
+          </button>
+          <button
+            className={`chip unread-chip${unreadOnly ? " active" : ""}`}
+            title="Mostrar solo las noticias sin leer"
+            onClick={() => setUnreadOnly(!unreadOnly)}
+          >
+            ● Sin leer
           </button>
           {orderedSources.map((s) => (
             <button
               key={s.id}
-              className={`chip${sourceId === s.id ? " active" : ""}`}
-              onClick={() => selectSource(sourceId === s.id ? null : s.id)}
+              className={`chip${view === s.id ? " active" : ""}`}
+              onClick={() => selectView(view === s.id ? "feed" : s.id)}
             >
               {s.name}
             </button>
@@ -121,12 +242,15 @@ export default function FeedPage() {
         </>
       )}
       {error && <p className="error">{(error as Error).message}</p>}
-      {!isLoading && articles.length === 0 && sourceId !== null && (
+      {!isLoading && articles.length === 0 && unreadOnly && (
+        <p className="muted">No queda nada sin leer por aquí. 🎉</p>
+      )}
+      {!isLoading && articles.length === 0 && !unreadOnly && typeof view === "number" && (
         <p className="muted">No hay noticias de esta fuente en el feed.</p>
       )}
-      {!isLoading && articles.length === 0 && sourceId === null && (
+      {!isLoading && articles.length === 0 && !unreadOnly && typeof view !== "number" && (
         <p className="muted">
-          No hay noticias todavía. Añade webs en <b>Fuentes</b> y pulsa <b>Actualizar</b>.
+          No hay noticias todavía. Añade webs en <b>Fuentes</b> y desliza hacia abajo para actualizar.
         </p>
       )}
 
@@ -137,13 +261,23 @@ export default function FeedPage() {
       <div ref={sentinel} />
       {isFetchingNextPage && <SkeletonCard />}
 
-      {/* Controles fijos: quitar el filtro activo y volver al principio sin
-          tener que subir a mano hasta los chips. */}
+      {/* Controles fijos: quitar el filtro activo, saltar de noticia en
+          noticia (con la hoja del bloc) y volver al principio. */}
       <div className="floating-controls">
-        {sourceId !== null && (
-          <button className="chip active" onClick={() => selectSource(null)} title="Quitar el filtro de fuente">
-            ✕ {orderedSources.find((s) => s.id === sourceId)?.name ?? "Filtro"}
+        {typeof view === "number" && (
+          <button className="chip active" onClick={() => selectView("feed")} title="Quitar el filtro de fuente">
+            ✕ {orderedSources.find((s) => s.id === view)?.name ?? "Filtro"}
           </button>
+        )}
+        {articles.length > 0 && (
+          <div className="article-nav">
+            <button onClick={() => turnPage(-1)} title="Noticia anterior">
+              ▲
+            </button>
+            <button onClick={() => turnPage(1)} title="Noticia siguiente">
+              ▼
+            </button>
+          </div>
         )}
         {showTop && (
           <button

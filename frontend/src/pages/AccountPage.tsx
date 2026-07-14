@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api, type UserPatch } from "../api";
 import { useAuth } from "../auth";
+import { ACCENTS, applyTheme, type Accent, type Theme } from "../theme";
 
 // Preferencias de la cuenta: etiqueta y explicación de cada interruptor.
-const PREFS: { key: keyof UserPatch & `pref_${string}`; label: string; hint: string }[] = [
+type BoolPref = "pref_favorite_extended" | "pref_favorite_images" | "pref_email_extended" | "pref_extended_open";
+const PREFS: { key: BoolPref; label: string; hint: string }[] = [
   {
     key: "pref_favorite_extended",
-    label: "Informe completo al marcar favorita",
-    hint: "Genera el informe automáticamente al guardar una noticia en favoritas.",
+    label: "Informe completo al guardar para más tarde",
+    hint: "Genera el informe automáticamente al guardar una noticia en Leer más tarde.",
   },
   {
     key: "pref_favorite_images",
-    label: "Fotos adicionales al marcar favorita",
+    label: "Fotos adicionales al guardar para más tarde",
     hint: "Busca más fotos del artículo y las muestra en una galería.",
   },
   {
@@ -53,6 +55,15 @@ export default function AccountPage() {
     },
     onError: (e: Error) => setNameMsg(e.message),
   });
+
+  // Tema y color se aplican al momento (optimista) y se guardan en la cuenta.
+  const theme = (user?.pref_theme as Theme) ?? "dark";
+  const accent = (user?.pref_accent as Accent) ?? "amber";
+  function savePrefTheme(patch: UserPatch) {
+    applyTheme((patch.pref_theme as Theme) ?? theme, (patch.pref_accent as Accent) ?? accent);
+    setPrefMsg(null);
+    prefMut.mutate(patch);
+  }
 
   // Las preferencias se guardan solas al cambiar cada interruptor.
   const [prefMsg, setPrefMsg] = useState<string | null>(null);
@@ -115,6 +126,37 @@ export default function AccountPage() {
       <section className="card">
         <h3>Preferencias</h3>
         <div className="prefs">
+          <div className="pref-theme-row">
+            <span className="pref-group-label">Tema</span>
+            <div className="segmented">
+              <button
+                className={theme === "dark" ? "active" : ""}
+                onClick={() => savePrefTheme({ pref_theme: "dark" })}
+              >
+                Oscuro
+              </button>
+              <button
+                className={theme === "light" ? "active" : ""}
+                onClick={() => savePrefTheme({ pref_theme: "light" })}
+              >
+                Claro
+              </button>
+            </div>
+          </div>
+          <div className="pref-theme-row">
+            <span className="pref-group-label">Color</span>
+            <div className="swatches">
+              {ACCENTS.map((a) => (
+                <button
+                  key={a.id}
+                  className={`swatch${accent === a.id ? " active" : ""}`}
+                  style={{ background: a.color }}
+                  title={a.label}
+                  onClick={() => savePrefTheme({ pref_accent: a.id })}
+                />
+              ))}
+            </div>
+          </div>
           {PREFS.map((p) => (
             <label key={p.key} className="pref-row">
               <input

@@ -18,6 +18,8 @@ class UserOut(BaseModel):
     pref_favorite_images: bool
     pref_email_extended: bool
     pref_extended_open: bool
+    pref_theme: str
+    pref_accent: str
 
 
 class UserAdminOut(BaseModel):
@@ -38,6 +40,8 @@ class UserUpdate(BaseModel):
     pref_favorite_images: bool | None = None
     pref_email_extended: bool | None = None
     pref_extended_open: bool | None = None
+    pref_theme: str | None = None
+    pref_accent: str | None = None
 
 
 class PasswordChange(BaseModel):
@@ -83,7 +87,6 @@ class SourceCreate(BaseModel):
     feed_url: str
     name: str
     topics: str
-    max_age_days: int = 7
 
 
 class SourceUpdate(BaseModel):
@@ -93,7 +96,7 @@ class SourceUpdate(BaseModel):
     topics: str | None = None
     vetoed_topics: str | None = None
     active: bool | None = None
-    max_age_days: int | None = None
+    in_feed: bool | None = None
 
 
 class SourceOut(BaseModel):
@@ -104,7 +107,8 @@ class SourceOut(BaseModel):
     topics: str
     vetoed_topics: str
     active: bool
-    max_age_days: int
+    # Si la fuente entra en el feed inicial (chip "Feed").
+    in_feed: bool
     # Veces que se ha filtrado el feed por esta fuente (ordena los chips).
     filter_count: int
     last_fetched_at: datetime | None

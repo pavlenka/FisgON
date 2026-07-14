@@ -64,14 +64,12 @@ def create_source(
 ) -> Source:
     if not data.topics.strip():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Indica al menos un tema")
-    _validate_max_age_days(data.max_age_days)
     source = Source(
         user_id=user.id,
         site_url=data.site_url,
         feed_url=data.feed_url,
         name=data.name,
         topics=data.topics.strip(),
-        max_age_days=data.max_age_days,
     )
     session.add(source)
     session.commit()
@@ -79,13 +77,6 @@ def create_source(
     # Procesamos ya las noticias de esta fuente (y del resto) en segundo plano.
     background.add_task(worker.refresh_user, user.id)
     return source
-
-
-def _validate_max_age_days(days: int) -> None:
-    if days < 1:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días debe ser al menos 1")
-    if days > 365:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días no puede superar 365")
 
 
 def _get_owned_source(source_id: int, user: User, session: Session) -> Source:
@@ -121,9 +112,8 @@ def update_source(
         source.topics = data.topics.strip()
     if data.active is not None:
         source.active = data.active
-    if data.max_age_days is not None:
-        _validate_max_age_days(data.max_age_days)
-        source.max_age_days = data.max_age_days
+    if data.in_feed is not None:
+        source.in_feed = data.in_feed
     if data.vetoed_topics is not None:
         # Normalizamos la lista (minúsculas, sin duplicados ni vacíos).
         source.vetoed_topics = ", ".join(topics.parse_topics(data.vetoed_topics))

@@ -74,7 +74,7 @@ function Shell() {
           </NavLink>
           <NavLink to="/favoritas">
             {ICONS.favorites}
-            Favoritas
+            Leer más tarde
           </NavLink>
           <NavLink to="/fuentes">
             {ICONS.sources}
@@ -125,7 +125,7 @@ function Shell() {
         </NavLink>
         <NavLink to="/favoritas">
           {ICONS.favorites}
-          <span>Favoritas</span>
+          <span>Más tarde</span>
         </NavLink>
         <NavLink to="/fuentes">
           {ICONS.sources}

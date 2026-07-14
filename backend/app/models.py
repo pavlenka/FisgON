@@ -32,6 +32,8 @@ class User(SQLModel, table=True):
     pref_favorite_images: bool = True  # buscar fotos al marcar favorita
     pref_email_extended: bool = True  # generar informe al enviar por correo
     pref_extended_open: bool = True  # informe desplegado por defecto en las tarjetas
+    pref_theme: str = "dark"  # tema de color: dark | light
+    pref_accent: str = "amber"  # color de acento: amber | red | green | blue
     # Última vez que se le vio (request autenticada). El barrido periódico no
     # actualiza las noticias de usuarios inactivos.
     last_seen_at: datetime | None = None
@@ -52,8 +54,9 @@ class Source(SQLModel, table=True):
     # Las noticias de estos temas se descartan aunque sean on-topic.
     vetoed_topics: str = ""
     active: bool = True
-    # Cuántos días hacia atrás se ingieren noticias de esta fuente (no afecta a lo ya guardado).
-    max_age_days: int = 7
+    # Si la fuente aparece en el feed inicial ("Feed"); con el chip "Todas"
+    # se ven también las excluidas.
+    in_feed: bool = True
     # Veces que el usuario ha filtrado el feed por esta fuente: las más
     # filtradas aparecen primero en los chips del feed.
     filter_count: int = 0

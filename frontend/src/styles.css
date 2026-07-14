@@ -8,6 +8,7 @@
   --bg-card: #17130c;
   --bg-elev: #211a10;
   --bg-input: #0b0906;
+  --bg-glass: rgba(14, 12, 8, 0.92);
   --border: #322818;
   --border-strong: #4a3b20;
   --text: #efe6d8;
@@ -21,6 +22,58 @@
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Tema claro: papel de despacho, misma jerarquía. */
+:root[data-theme="light"] {
+  --bg: #f3eee3;
+  --bg-card: #fdfaf2;
+  --bg-elev: #ebe3d2;
+  --bg-input: #fffef9;
+  --bg-glass: rgba(243, 238, 227, 0.92);
+  --border: #ddd2ba;
+  --border-strong: #c2b393;
+  --text: #241c0e;
+  --text-soft: #4a4030;
+  --muted: #8a7b60;
+  --danger: #c03a2e;
+}
+
+/* Acentos: cuatro colores básicos (el ámbar es el de siempre). */
+:root[data-accent="red"] {
+  --accent: #e05545;
+  --accent-hover: #ef7263;
+  --accent-ink: #1b0c0a;
+}
+:root[data-accent="green"] {
+  --accent: #58a86a;
+  --accent-hover: #74c286;
+  --accent-ink: #0c1710;
+}
+:root[data-accent="blue"] {
+  --accent: #5b8fd6;
+  --accent-hover: #7cabe8;
+  --accent-ink: #0a1220;
+}
+:root[data-theme="light"][data-accent="amber"] {
+  --accent: #c07d0f;
+  --accent-hover: #a86c0a;
+  --accent-ink: #fffef9;
+}
+:root[data-theme="light"][data-accent="red"] {
+  --accent: #c74334;
+  --accent-hover: #b03327;
+  --accent-ink: #fffef9;
+}
+:root[data-theme="light"][data-accent="green"] {
+  --accent: #3d8a4f;
+  --accent-hover: #2f7a41;
+  --accent-ink: #fffef9;
+}
+:root[data-theme="light"][data-accent="blue"] {
+  --accent: #3a6fbd;
+  --accent-hover: #2c5fab;
+  --accent-ink: #fffef9;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -32,7 +85,7 @@ html {
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: radial-gradient(60rem 30rem at 50% -12rem, rgba(233, 161, 59, 0.07), transparent 65%);
+  background-image: radial-gradient(60rem 30rem at 50% -12rem, color-mix(in srgb, var(--accent) 7%, transparent), transparent 65%);
   background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
@@ -137,7 +190,7 @@ input::placeholder {
 input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(233, 161, 59, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .muted {
@@ -168,7 +221,7 @@ h3 {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: radial-gradient(38rem 26rem at 50% 26%, rgba(233, 161, 59, 0.09), transparent 70%);
+  background: radial-gradient(38rem 26rem at 50% 26%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%);
 }
 .auth-card {
   background: var(--bg-card);
@@ -214,7 +267,7 @@ h3 {
   flex-wrap: wrap;
   gap: 0.4rem 1rem;
   padding: 0.85rem 1.2rem;
-  background: rgba(14, 12, 8, 0.92);
+  background: var(--bg-glass);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
@@ -272,6 +325,190 @@ h3 {
   padding: 1.4rem 1.2rem;
 }
 
+/* ---------- Tirar para refrescar (móvil) ---------- */
+.ptr {
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.ptr-arrow {
+  font-size: 1.2rem;
+  color: var(--muted);
+  padding-bottom: 0.4rem;
+  transition: transform 0.15s ease, color 0.15s;
+}
+.ptr-arrow.ready {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* Botón de tema (sol/luna) en la barra del feed. */
+.theme-btn {
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card);
+}
+.theme-btn svg {
+  width: 17px;
+  height: 17px;
+}
+.mobile-refreshing {
+  display: none;
+}
+
+/* Saltar de noticia en noticia (par de flechas flotante). */
+.article-nav {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-strong);
+  border-radius: 21px;
+  overflow: hidden;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+}
+.article-nav button {
+  width: 42px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--bg-elev);
+  font-size: 0.75rem;
+}
+.article-nav button:first-child {
+  border-bottom: 1px solid var(--border);
+}
+
+/* La hoja del bloc: capa fija con perspectiva donde vive el clon animado. */
+.page-turn-layer {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  perspective: 1300px;
+}
+.page-turn-layer .card {
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+}
+@keyframes peel-out {
+  0% {
+    transform: rotateX(0) rotateZ(0);
+    opacity: 1;
+  }
+  30% {
+    transform: rotateX(-38deg) rotateZ(1.6deg);
+    opacity: 1;
+  }
+  70% {
+    transform: rotateX(-92deg) rotateZ(-2.5deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotateX(-128deg) rotateZ(-4deg) translateY(-2%);
+    opacity: 0;
+  }
+}
+.peel-out {
+  transform-origin: 50% -6%;
+  backface-visibility: hidden;
+  animation: peel-out 0.52s cubic-bezier(0.5, 0.05, 0.7, 0.3) forwards;
+}
+@keyframes peel-in {
+  0% {
+    transform: rotateX(-115deg) rotateZ(-3deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  75% {
+    transform: rotateX(6deg) rotateZ(0.6deg);
+  }
+  100% {
+    transform: rotateX(0) rotateZ(0);
+    opacity: 1;
+  }
+}
+.peel-in {
+  transform-origin: 50% -6%;
+  backface-visibility: hidden;
+  animation: peel-in 0.5s cubic-bezier(0.25, 0.9, 0.35, 1.05) forwards;
+}
+
+/* Acceso directo cuando el informe termina y ya no estás en la tarjeta. */
+.ready-pill {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 1.4rem;
+  z-index: 30;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  animation: section-in 0.25s ease;
+}
+.ready-pill:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
+/* Selector segmentado (tema) y muestras de color en Preferencias. */
+.pref-theme-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.pref-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  min-width: 3.2rem;
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.segmented button {
+  border: none;
+  border-radius: 0;
+  background: var(--bg-card);
+  padding: 0.45rem 0.9rem;
+}
+.segmented button.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.swatches {
+  display: flex;
+  gap: 0.6rem;
+}
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+}
+.swatch.active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text);
+}
+
 /* ---------- Chips de filtro por fuente ---------- */
 .source-chips {
   display: flex;
@@ -302,6 +539,10 @@ h3 {
 .chip.active:hover:not(:disabled) {
   background: var(--accent-hover);
   color: var(--accent-ink);
+}
+.unread-chip:not(.active) {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 /* Controles fijos abajo a la derecha: quitar el filtro y volver arriba. */
@@ -462,8 +703,8 @@ h3 {
 /* No leída: marco ámbar alrededor para distinguirla de un vistazo. Se marca
    sola al pasar la tarjeta entera, o a mano con el botón de la tarjeta. */
 .card.unread {
-  border-color: rgba(233, 161, 59, 0.55);
-  box-shadow: 0 0 0 1px rgba(233, 161, 59, 0.22);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 .feed .card.unread:hover {
   border-color: var(--accent);
@@ -865,7 +1106,7 @@ h3 {
     display: flex;
     justify-content: space-around;
     align-items: stretch;
-    background: rgba(14, 12, 8, 0.94);
+    background: var(--bg-glass);
     backdrop-filter: blur(10px);
     border-top: 1px solid var(--border);
     /* Margen lateral: las esquinas redondeadas del iPhone recortaban los
@@ -903,6 +1144,18 @@ h3 {
   }
   /* Los controles fijos suben para no quedar bajo la barra de pestañas. */
   .floating-controls {
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  }
+  /* En móvil se refresca tirando hacia abajo desde arriba del todo. */
+  .refresh-btn {
+    display: none;
+  }
+  .mobile-refreshing {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .ready-pill {
     bottom: calc(4.6rem + env(safe-area-inset-bottom));
   }
 }
@@ -961,6 +1214,8 @@ h3 {
   .card-summary-extended,
   .card-gallery,
   .ask-form,
+  .peel-out,
+  .peel-in,
   .skeleton-card .sk-image,
   .skeleton-card .sk-line {
     animation: none !important;

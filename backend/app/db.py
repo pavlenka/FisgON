@@ -35,11 +35,17 @@ def init_db() -> None:
         for pref in ("pref_favorite_extended", "pref_favorite_images", "pref_email_extended", "pref_extended_open"):
             if pref not in user_cols:
                 conn.execute(text(f"ALTER TABLE user ADD COLUMN {pref} BOOLEAN NOT NULL DEFAULT 1"))
+        if "pref_theme" not in user_cols:
+            conn.execute(text("ALTER TABLE user ADD COLUMN pref_theme TEXT NOT NULL DEFAULT 'dark'"))
+        if "pref_accent" not in user_cols:
+            conn.execute(text("ALTER TABLE user ADD COLUMN pref_accent TEXT NOT NULL DEFAULT 'amber'"))
         source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
         if "vetoed_topics" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN vetoed_topics TEXT NOT NULL DEFAULT ''"))
         if "filter_count" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN filter_count INTEGER NOT NULL DEFAULT 0"))
+        if "in_feed" not in source_cols:
+            conn.execute(text("ALTER TABLE source ADD COLUMN in_feed BOOLEAN NOT NULL DEFAULT 1"))
         article_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(article)"))}
         if "topic" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))

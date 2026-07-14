@@ -72,6 +72,10 @@ export default function ArticleCard({ article }: { article: Article }) {
     api.markArticlesRead([article.id], next).catch(() => {});
   }
 
+  // Si pediste el informe y seguiste leyendo el feed, al terminar aparece un
+  // acceso directo flotante para volver de un salto a esta noticia.
+  const [showReadyPill, setShowReadyPill] = useState(false);
+
   const [asking, setAsking] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
@@ -89,6 +93,12 @@ export default function ArticleCard({ article }: { article: Article }) {
       setExtended(res.summary);
       setReportOpen(true);
       article.extended_summary = res.summary;
+      // ¿La tarjeta sigue en pantalla? Si no, ofrecemos volver a ella.
+      const rect = cardRef.current?.getBoundingClientRect();
+      if (rect && (rect.bottom < 0 || rect.top > window.innerHeight)) {
+        setShowReadyPill(true);
+        setTimeout(() => setShowReadyPill(false), 15000);
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -195,8 +205,8 @@ export default function ArticleCard({ article }: { article: Article }) {
             className={`fav-btn${favorite ? " active" : ""}`}
             title={
               favorite
-                ? "Quitar de favoritas"
-                : "Guardar en favoritas: genera el informe completo y busca más fotos"
+                ? "Quitar de Leer más tarde"
+                : "Guardar para leer más tarde: genera el informe completo y busca más fotos"
             }
             onClick={() => favMut.mutate()}
             disabled={favMut.isPending}
@@ -206,9 +216,9 @@ export default function ArticleCard({ article }: { article: Article }) {
                 <span className="spinner" /> Guardando
               </>
             ) : favorite ? (
-              "★ Favorita"
+              "★ Guardada"
             ) : (
-              "☆ Favorita"
+              "☆ Más tarde"
             )}
           </button>
           <button
@@ -280,6 +290,18 @@ export default function ArticleCard({ article }: { article: Article }) {
 
       {error && <p className="error">{error}</p>}
       {emailMsg && <p className="muted">{emailMsg}</p>}
+
+      {showReadyPill && (
+        <button
+          className="ready-pill"
+          onClick={() => {
+            setShowReadyPill(false);
+            cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        >
+          Informe listo · Ir a la noticia ↩
+        </button>
+      )}
 
       <div className="card-actions">
         <a className="card-link" href={article.link} target="_blank" rel="noreferrer">

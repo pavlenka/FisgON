@@ -76,6 +76,8 @@ def get_feed(
     cursor: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=50),
     source_id: int | None = Query(default=None),
+    include_all: bool = Query(default=False),
+    unread_only: bool = Query(default=False),
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> FeedPage:
@@ -89,6 +91,11 @@ def get_feed(
     if source_id is not None:
         # Solo las noticias de una fuente (el join ya garantiza que es del usuario).
         stmt = stmt.where(Article.source_id == source_id)
+    elif not include_all:
+        # Vista "Feed": solo las fuentes marcadas para el feed inicial.
+        stmt = stmt.where(Source.in_feed == True)  # noqa: E712
+    if unread_only:
+        stmt = stmt.where(Article.is_read == False)  # noqa: E712
 
     if cursor:
         c_time, c_id = _decode_cursor(cursor)

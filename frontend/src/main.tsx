@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./auth";
+import { applyCachedTheme } from "./theme";
 import "./styles.css";
+
+// Tema cacheado antes del primer render: sin destello de tema equivocado.
+applyCachedTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },

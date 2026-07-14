@@ -42,8 +42,8 @@ export default function FavoritesPage() {
       {error && <p className="error">{(error as Error).message}</p>}
       {!isLoading && articles.length === 0 && (
         <p className="muted">
-          No tienes favoritas todavía. Marca la <b>☆</b> en cualquier noticia del feed y se guardará aquí
-          con su informe completo y más fotos.
+          No has guardado nada todavía. Toca la <b>☆</b> en cualquier noticia del feed y se guardará aquí
+          para leerla más tarde, con su informe completo y más fotos.
         </p>
       )}
 

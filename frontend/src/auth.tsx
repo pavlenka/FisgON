@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, clearToken, getToken, setToken, setUnauthorizedHandler, type AuthUser } from "./api";
+import { applyTheme, type Accent, type Theme } from "./theme";
+
+// El tema del usuario vive en sus preferencias: se aplica cada vez que
+// llega (login, arranque, cambio en Cuenta).
+function syncTheme(u: AuthUser | null) {
+  if (u) applyTheme(u.pref_theme as Theme, u.pref_accent as Accent);
+}
 
 interface AuthContextValue {
   token: string | null;
@@ -28,7 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (getToken()) {
       api
         .me()
-        .then(setUser)
+        .then((u) => {
+          setUser(u);
+          syncTheme(u);
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -41,7 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await api.login(email, password);
     setToken(res.access_token);
     setTok(res.access_token);
-    setUser(await api.me());
+    const u = await api.me();
+    setUser(u);
+    syncTheme(u);
   };
 
   const logout = () => {
@@ -51,7 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    setUser(await api.me());
+    const u = await api.me();
+    setUser(u);
+    syncTheme(u);
   };
 
   return (

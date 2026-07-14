@@ -181,6 +181,14 @@ def update_me(
         value = getattr(data, pref)
         if value is not None:
             setattr(user, pref, value)
+    if data.pref_theme is not None:
+        if data.pref_theme not in ("dark", "light"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tema no válido")
+        user.pref_theme = data.pref_theme
+    if data.pref_accent is not None:
+        if data.pref_accent not in ("amber", "red", "green", "blue"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Color no válido")
+        user.pref_accent = data.pref_accent
     session.add(user)
     session.commit()
     session.refresh(user)
