@@ -260,6 +260,38 @@ h3 {
   padding: 1.4rem 1.2rem;
 }
 
+/* ---------- Chips de filtro por fuente ---------- */
+.source-chips {
+  display: flex;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none; /* la fila se desplaza con el dedo, sin barra */
+}
+.source-chips::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  flex-shrink: 0;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-soft);
+}
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.chip.active:hover:not(:disabled) {
+  background: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
 /* ---------- Animaciones: que se entienda qué está pasando ---------- */
 @keyframes page-in {
   from {

@@ -73,6 +73,7 @@ def _article_out(article: Article, source_name: str) -> ArticleOut:
 def get_feed(
     cursor: str | None = Query(default=None),
     limit: int = Query(default=20, ge=1, le=50),
+    source_id: int | None = Query(default=None),
     user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> FeedPage:
@@ -83,6 +84,9 @@ def get_feed(
         .where(_VISIBLE)
         .order_by(Article.published_at.desc(), Article.id.desc())
     )
+    if source_id is not None:
+        # Solo las noticias de una fuente (el join ya garantiza que es del usuario).
+        stmt = stmt.where(Article.source_id == source_id)
 
     if cursor:
         c_time, c_id = _decode_cursor(cursor)

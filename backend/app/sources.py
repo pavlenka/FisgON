@@ -157,6 +157,20 @@ def delete_source(
     session.commit()
 
 
+@router.post("/{source_id}/filter-hit", status_code=status.HTTP_204_NO_CONTENT)
+def filter_hit(
+    source_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> None:
+    """El usuario ha filtrado el feed por esta fuente: se anota para ordenar
+    los chips del feed por uso (las más filtradas, primero)."""
+    source = _get_owned_source(source_id, user, session)
+    source.filter_count += 1
+    session.add(source)
+    session.commit()
+
+
 @router.post("/refresh")
 def refresh(
     background: BackgroundTasks,

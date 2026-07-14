@@ -85,6 +85,8 @@ export interface Source {
   active: boolean;
   max_age_days: number;
   summary_paragraphs: number;
+  // Veces que se ha filtrado el feed por esta fuente (ordena los chips).
+  filter_count: number;
   last_fetched_at: string | null;
 }
 
@@ -248,8 +250,13 @@ export const api = {
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),
   refresh: () => apiFetch("/sources/refresh", { method: "POST" }),
   refreshStatus: () => apiFetch("/sources/refresh/status") as Promise<RefreshStatus>,
-  getFeed: (cursor?: string | null) =>
-    apiFetch(`/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
+  getFeed: (cursor?: string | null, sourceId?: number | null) =>
+    apiFetch(
+      `/articles?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}${
+        sourceId ? `&source_id=${sourceId}` : ""
+      }`
+    ) as Promise<FeedPage>,
+  sourceFilterHit: (id: number) => apiFetch(`/sources/${id}/filter-hit`, { method: "POST" }),
   getFavorites: (cursor?: string | null) =>
     apiFetch(`/articles/favorites?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`) as Promise<FeedPage>,
   favoriteArticle: (id: number, favorite: boolean) =>

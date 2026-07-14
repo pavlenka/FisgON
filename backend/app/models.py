@@ -56,6 +56,9 @@ class Source(SQLModel, table=True):
     max_age_days: int = 7
     # Párrafos del resumen automático (1-3). Solo afecta a noticias analizadas después del cambio.
     summary_paragraphs: int = 1
+    # Veces que el usuario ha filtrado el feed por esta fuente: las más
+    # filtradas aparecen primero en los chips del feed.
+    filter_count: int = 0
     created_at: datetime = Field(default_factory=utcnow)
     last_fetched_at: datetime | None = None
 

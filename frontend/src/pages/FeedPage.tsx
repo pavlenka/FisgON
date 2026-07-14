@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
 import ArticleCard from "../components/ArticleCard";
 import SkeletonCard from "../components/SkeletonCard";
@@ -9,9 +9,31 @@ export default function FeedPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
+  // Filtro por fuente: null = todas. Los chips se ordenan por uso (las más
+  // filtradas primero); el orden se congela al montar para que no bailen
+  // bajo el dedo, y se recalcula en la próxima visita.
+  const [sourceId, setSourceId] = useState<number | null>(null);
+  const { data: sources } = useQuery({ queryKey: ["sources"], queryFn: api.listSources });
+  const orderedSources = useMemo(
+    () =>
+      (sources ?? [])
+        .filter((s) => s.active)
+        .sort((a, b) => b.filter_count - a.filter_count || a.name.localeCompare(b.name)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sources !== undefined]
+  );
+
+  function selectSource(id: number | null) {
+    setSourceId(id);
+    if (id !== null) {
+      // Anotamos el uso para el orden futuro; si falla no pasa nada.
+      api.sourceFilterHit(id).catch(() => {});
+    }
+  }
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, error } = useInfiniteQuery({
-    queryKey: ["feed"],
-    queryFn: ({ pageParam }) => api.getFeed(pageParam),
+    queryKey: ["feed", sourceId],
+    queryFn: ({ pageParam }) => api.getFeed(pageParam, sourceId),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.next_cursor,
   });
@@ -66,6 +88,23 @@ export default function FeedPage() {
         {refreshMsg && <span className="muted">{refreshMsg}</span>}
       </div>
 
+      {orderedSources.length > 1 && (
+        <div className="source-chips">
+          <button className={`chip${sourceId === null ? " active" : ""}`} onClick={() => selectSource(null)}>
+            Todas
+          </button>
+          {orderedSources.map((s) => (
+            <button
+              key={s.id}
+              className={`chip${sourceId === s.id ? " active" : ""}`}
+              onClick={() => selectSource(sourceId === s.id ? null : s.id)}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {isLoading && (
         <>
           <SkeletonCard />
@@ -74,7 +113,10 @@ export default function FeedPage() {
         </>
       )}
       {error && <p className="error">{(error as Error).message}</p>}
-      {!isLoading && articles.length === 0 && (
+      {!isLoading && articles.length === 0 && sourceId !== null && (
+        <p className="muted">No hay noticias de esta fuente en el feed.</p>
+      )}
+      {!isLoading && articles.length === 0 && sourceId === null && (
         <p className="muted">
           No hay noticias todavía. Añade webs en <b>Fuentes</b> y pulsa <b>Actualizar</b>.
         </p>

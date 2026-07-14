@@ -40,6 +40,8 @@ def init_db() -> None:
             conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))
         if "vetoed_topics" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN vetoed_topics TEXT NOT NULL DEFAULT ''"))
+        if "filter_count" not in source_cols:
+            conn.execute(text("ALTER TABLE source ADD COLUMN filter_count INTEGER NOT NULL DEFAULT 0"))
         article_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(article)"))}
         if "topic" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))

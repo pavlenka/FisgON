@@ -108,6 +108,8 @@ class SourceOut(BaseModel):
     active: bool
     max_age_days: int
     summary_paragraphs: int
+    # Veces que se ha filtrado el feed por esta fuente (ordena los chips).
+    filter_count: int
     last_fetched_at: datetime | None
 
 
