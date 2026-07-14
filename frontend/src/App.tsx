@@ -49,6 +49,12 @@ const ICONS = {
       <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
     </svg>
   ),
+  logout: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 5V4a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 4v16A1.5 1.5 0 0 0 5 21.5h7.5A1.5 1.5 0 0 0 14 20v-1" />
+      <path d="M9.5 12h11M17 8.5l3.5 3.5-3.5 3.5" />
+    </svg>
+  ),
 };
 
 function Shell() {
@@ -62,17 +68,36 @@ function Shell() {
           Fisg<span className="on">ON</span>
         </div>
         <nav>
-          <NavLink to="/">Noticias</NavLink>
-          <NavLink to="/favoritas">Favoritas</NavLink>
-          <NavLink to="/fuentes">Fuentes</NavLink>
-          <NavLink to="/analizadas">Analizadas</NavLink>
-          {user?.is_admin && <NavLink to="/dashboard">Dashboard</NavLink>}
+          <NavLink to="/" end>
+            {ICONS.feed}
+            Noticias
+          </NavLink>
+          <NavLink to="/favoritas">
+            {ICONS.favorites}
+            Favoritas
+          </NavLink>
+          <NavLink to="/fuentes">
+            {ICONS.sources}
+            Fuentes
+          </NavLink>
+          <NavLink to="/analizadas">
+            {ICONS.analyzed}
+            Analizadas
+          </NavLink>
+          {user?.is_admin && (
+            <NavLink to="/dashboard">
+              {ICONS.dashboard}
+              Dashboard
+            </NavLink>
+          )}
           {user && (
             <NavLink to="/cuenta" className="user-name">
+              {ICONS.account}
               {user.name}
             </NavLink>
           )}
           <button className="link-btn" onClick={logout}>
+            {ICONS.logout}
             Salir
           </button>
         </nav>

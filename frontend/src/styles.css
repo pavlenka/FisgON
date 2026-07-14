@@ -231,12 +231,21 @@ h3 {
   gap: 0.6rem 1.1rem;
 }
 .topbar nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-family: var(--font-sans);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-soft);
   text-decoration: none;
+}
+.topbar nav a svg,
+.topbar nav .link-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 .topbar nav a:hover,
 .topbar nav a.active {
@@ -249,6 +258,9 @@ h3 {
   color: var(--accent);
 }
 .topbar nav .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
