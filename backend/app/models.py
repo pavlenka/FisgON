@@ -54,8 +54,6 @@ class Source(SQLModel, table=True):
     active: bool = True
     # Cuántos días hacia atrás se ingieren noticias de esta fuente (no afecta a lo ya guardado).
     max_age_days: int = 7
-    # Párrafos del resumen automático (1-3). Solo afecta a noticias analizadas después del cambio.
-    summary_paragraphs: int = 1
     # Veces que el usuario ha filtrado el feed por esta fuente: las más
     # filtradas aparecen primero en los chips del feed.
     filter_count: int = 0

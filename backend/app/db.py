@@ -22,7 +22,7 @@ def init_db() -> None:
 
     with engine.connect() as conn:
         # create_all no añade columnas a tablas ya existentes: si la BD viene
-        # de antes de `is_admin`/`summary_paragraphs`, las añadimos a mano.
+        # de antes de estas columnas, las añadimos a mano.
         user_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(user)"))}
         if "is_admin" not in user_cols:
             conn.execute(text("ALTER TABLE user ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
@@ -36,8 +36,6 @@ def init_db() -> None:
             if pref not in user_cols:
                 conn.execute(text(f"ALTER TABLE user ADD COLUMN {pref} BOOLEAN NOT NULL DEFAULT 1"))
         source_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(source)"))}
-        if "summary_paragraphs" not in source_cols:
-            conn.execute(text("ALTER TABLE source ADD COLUMN summary_paragraphs INTEGER NOT NULL DEFAULT 1"))
         if "vetoed_topics" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN vetoed_topics TEXT NOT NULL DEFAULT ''"))
         if "filter_count" not in source_cols:

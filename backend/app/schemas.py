@@ -84,7 +84,6 @@ class SourceCreate(BaseModel):
     name: str
     topics: str
     max_age_days: int = 7
-    summary_paragraphs: int = 1
 
 
 class SourceUpdate(BaseModel):
@@ -95,7 +94,6 @@ class SourceUpdate(BaseModel):
     vetoed_topics: str | None = None
     active: bool | None = None
     max_age_days: int | None = None
-    summary_paragraphs: int | None = None
 
 
 class SourceOut(BaseModel):
@@ -107,7 +105,6 @@ class SourceOut(BaseModel):
     vetoed_topics: str
     active: bool
     max_age_days: int
-    summary_paragraphs: int
     # Veces que se ha filtrado el feed por esta fuente (ordena los chips).
     filter_count: int
     last_fetched_at: datetime | None

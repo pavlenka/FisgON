@@ -84,7 +84,6 @@ export interface Source {
   vetoed_topics: string;
   active: boolean;
   max_age_days: number;
-  summary_paragraphs: number;
   // Veces que se ha filtrado el feed por esta fuente (ordena los chips).
   filter_count: number;
   last_fetched_at: string | null;
@@ -252,7 +251,6 @@ export const api = {
     name: string;
     topics: string;
     max_age_days: number;
-    summary_paragraphs: number;
   }) => apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
   updateSource: (
     id: number,
@@ -264,7 +262,6 @@ export const api = {
       vetoed_topics: string;
       active: boolean;
       max_age_days: number;
-      summary_paragraphs: number;
     }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),

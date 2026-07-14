@@ -9,7 +9,6 @@ interface EditForm {
   topics: string;
   vetoed_topics: string;
   max_age_days: number;
-  summary_paragraphs: number;
 }
 
 function toEditForm(s: Source): EditForm {
@@ -20,7 +19,6 @@ function toEditForm(s: Source): EditForm {
     topics: s.topics,
     vetoed_topics: s.vetoed_topics,
     max_age_days: s.max_age_days,
-    summary_paragraphs: s.summary_paragraphs,
   };
 }
 
@@ -33,7 +31,6 @@ export default function SourcesPage() {
   const [name, setName] = useState("");
   const [topics, setTopics] = useState("");
   const [maxAgeDays, setMaxAgeDays] = useState(7);
-  const [summaryParagraphs, setSummaryParagraphs] = useState(1);
   const [err, setErr] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -59,7 +56,6 @@ export default function SourcesPage() {
         name,
         topics,
         max_age_days: maxAgeDays,
-        summary_paragraphs: summaryParagraphs,
       }),
     onSuccess: () => {
       setUrl("");
@@ -67,7 +63,6 @@ export default function SourcesPage() {
       setName("");
       setTopics("");
       setMaxAgeDays(7);
-      setSummaryParagraphs(1);
       setErr(null);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
     },
@@ -132,14 +127,6 @@ export default function SourcesPage() {
                 onChange={(e) => setMaxAgeDays(Number(e.target.value))}
               />
             </label>
-            <label>
-              Párrafos del resumen
-              <select value={summaryParagraphs} onChange={(e) => setSummaryParagraphs(Number(e.target.value))}>
-                <option value={1}>1 párrafo</option>
-                <option value={2}>2 párrafos</option>
-                <option value={3}>3 párrafos</option>
-              </select>
-            </label>
             <p className="muted">Solo se mostrarán noticias sobre estos temas. Feed: {detected.feed_url}</p>
             <button onClick={() => createMut.mutate()} disabled={!topics.trim() || createMut.isPending}>
               {createMut.isPending ? "Guardando…" : "Guardar web"}
@@ -201,17 +188,6 @@ export default function SourcesPage() {
                     onChange={(e) => setEditForm({ ...editForm, max_age_days: Number(e.target.value) })}
                   />
                 </label>
-                <label>
-                  Párrafos del resumen
-                  <select
-                    value={editForm.summary_paragraphs}
-                    onChange={(e) => setEditForm({ ...editForm, summary_paragraphs: Number(e.target.value) })}
-                  >
-                    <option value={1}>1 párrafo</option>
-                    <option value={2}>2 párrafos</option>
-                    <option value={3}>3 párrafos</option>
-                  </select>
-                </label>
                 {editErr && <p className="error">{editErr}</p>}
                 <div className="row">
                   <button
@@ -240,8 +216,6 @@ export default function SourcesPage() {
                   {s.vetoed_topics && <div className="muted vetoed-line">Vetados: {s.vetoed_topics}</div>}
                   <div className="muted">
                     Últimos {s.max_age_days} días
-                    {" · "}
-                    Resumen de {s.summary_paragraphs} {s.summary_paragraphs === 1 ? "párrafo" : "párrafos"}
                     {" · "}
                     <button
                       className="link-btn"

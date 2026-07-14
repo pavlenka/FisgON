@@ -65,7 +65,6 @@ def create_source(
     if not data.topics.strip():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Indica al menos un tema")
     _validate_max_age_days(data.max_age_days)
-    _validate_summary_paragraphs(data.summary_paragraphs)
     source = Source(
         user_id=user.id,
         site_url=data.site_url,
@@ -73,7 +72,6 @@ def create_source(
         name=data.name,
         topics=data.topics.strip(),
         max_age_days=data.max_age_days,
-        summary_paragraphs=data.summary_paragraphs,
     )
     session.add(source)
     session.commit()
@@ -88,11 +86,6 @@ def _validate_max_age_days(days: int) -> None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días debe ser al menos 1")
     if days > 365:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El número de días no puede superar 365")
-
-
-def _validate_summary_paragraphs(paragraphs: int) -> None:
-    if paragraphs not in (1, 2, 3):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El resumen debe tener 1, 2 o 3 párrafos")
 
 
 def _get_owned_source(source_id: int, user: User, session: Session) -> Source:
@@ -131,9 +124,6 @@ def update_source(
     if data.max_age_days is not None:
         _validate_max_age_days(data.max_age_days)
         source.max_age_days = data.max_age_days
-    if data.summary_paragraphs is not None:
-        _validate_summary_paragraphs(data.summary_paragraphs)
-        source.summary_paragraphs = data.summary_paragraphs
     if data.vetoed_topics is not None:
         # Normalizamos la lista (minúsculas, sin duplicados ni vacíos).
         source.vetoed_topics = ", ".join(topics.parse_topics(data.vetoed_topics))
