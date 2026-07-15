@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, queueMarkRead, type Article } from "../api";
 import { useAuth } from "../auth";
@@ -140,8 +141,9 @@ export default function ArticleCard({ article }: { article: Article }) {
       setFavorite(res.is_favorite);
       setGallery(res.extra_images);
       if (res.extended_summary && !extended) {
-        // Recién generado al marcar favorita: se muestra desplegado.
-        setReportOpen(true);
+        // Recién generado como efecto de guardar: se muestra PLEGADO para no
+        // mover el feed. Se abre luego con la cabecera del informe.
+        setReportOpen(false);
       }
       setExtended(res.extended_summary);
       article.is_favorite = res.is_favorite;
@@ -159,10 +161,12 @@ export default function ArticleCard({ article }: { article: Article }) {
       setError(null);
       setEmailMsg(res.message);
       // Si el correo generó el informe en el backend, lo recogemos para la
-      // tarjeta (viene cacheado: no cuesta otra llamada a la IA).
+      // tarjeta (viene cacheado: no cuesta otra llamada a la IA). Plegado,
+      // para no mover el feed.
       if (user?.pref_email_extended && !extended) {
         try {
           const exp = await api.expandArticle(article.id);
+          setReportOpen(false);
           setExtended(exp.summary);
           article.extended_summary = exp.summary;
         } catch {
@@ -291,17 +295,23 @@ export default function ArticleCard({ article }: { article: Article }) {
       {error && <p className="error">{error}</p>}
       {emailMsg && <p className="muted">{emailMsg}</p>}
 
-      {showReadyPill && (
-        <button
-          className="ready-pill"
-          onClick={() => {
-            setShowReadyPill(false);
-            cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        >
-          Informe listo · Ir a la noticia ↩
-        </button>
-      )}
+      {/* Portal a <body>: si la píldora se renderiza dentro de la tarjeta,
+          los transform de .card (hover/entrada) y .page-fade rompen su
+          position:fixed y el clic cae en el botón de debajo. Fuera de todo
+          ancestro transformado se posiciona bien respecto a la pantalla. */}
+      {showReadyPill &&
+        createPortal(
+          <button
+            className="ready-pill"
+            onClick={() => {
+              setShowReadyPill(false);
+              cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+          >
+            Informe listo · Ir a la noticia ↩
+          </button>,
+          document.body
+        )}
 
       <div className="card-actions">
         <a className="card-link" href={article.link} target="_blank" rel="noreferrer">
