@@ -35,7 +35,6 @@ export default function ArticleCard({ article }: { article: Article }) {
   const [favorite, setFavorite] = useState(article.is_favorite);
   const [gallery, setGallery] = useState<string[]>(article.extra_images);
   const [read, setRead] = useState(article.is_read);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Al pasar la tarjeta entera (su borde inferior sale por arriba de la
@@ -73,39 +72,20 @@ export default function ArticleCard({ article }: { article: Article }) {
     api.markArticlesRead([article.id], next).catch(() => {});
   }
 
-  // Si pediste el informe y seguiste leyendo el feed, al terminar aparece un
-  // acceso directo flotante para volver de un salto a esta noticia.
+  // Si guardaste la noticia y seguiste leyendo el feed, al terminar de
+  // generarse el informe aparece un acceso directo flotante para volver.
   const [showReadyPill, setShowReadyPill] = useState(false);
+  function offerReturnIfAway() {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (rect && (rect.bottom < 0 || rect.top > window.innerHeight)) {
+      setShowReadyPill(true);
+      setTimeout(() => setShowReadyPill(false), 15000);
+    }
+  }
 
   const [asking, setAsking] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
-
-  async function handleExpand() {
-    if (extended) {
-      // Ya generado: el botón pliega/despliega, no vuelve a pedirlo.
-      setReportOpen(!reportOpen);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.expandArticle(article.id);
-      setExtended(res.summary);
-      setReportOpen(true);
-      article.extended_summary = res.summary;
-      // ¿La tarjeta sigue en pantalla? Si no, ofrecemos volver a ella.
-      const rect = cardRef.current?.getBoundingClientRect();
-      if (rect && (rect.bottom < 0 || rect.top > window.innerHeight)) {
-        setShowReadyPill(true);
-        setTimeout(() => setShowReadyPill(false), 15000);
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const askMut = useMutation({
     mutationFn: (q: string) => api.askArticle(article.id, q),
@@ -142,8 +122,10 @@ export default function ArticleCard({ article }: { article: Article }) {
       setGallery(res.extra_images);
       if (res.extended_summary && !extended) {
         // Recién generado como efecto de guardar: se muestra PLEGADO para no
-        // mover el feed. Se abre luego con la cabecera del informe.
+        // mover el feed. Se abre luego con la cabecera del informe. Si el
+        // usuario siguió bajando mientras se generaba, píldora para volver.
         setReportOpen(false);
+        offerReturnIfAway();
       }
       setExtended(res.extended_summary);
       article.is_favorite = res.is_favorite;
@@ -335,16 +317,6 @@ export default function ArticleCard({ article }: { article: Article }) {
             }}
           >
             {asking ? "Cerrar pregunta" : "Preguntar"}
-          </button>
-          <button className="expand-btn" onClick={handleExpand} disabled={loading}>
-            {loading && <span className="spinner" />}
-            {loading
-              ? "Ampliando…"
-              : extended
-                ? reportOpen
-                  ? "Plegar informe"
-                  : "Desplegar informe"
-                : "Resumen más extenso"}
           </button>
         </div>
       </div>
