@@ -1,16 +1,15 @@
-// Saltar de noticia en noticia con efecto de bloc de notas físico: al avanzar,
-// la tarjeta actual se "arranca" girando sobre su borde superior (como quitar
-// un post-it) y debajo aparece la siguiente; al retroceder, la hoja anterior
-// se vuelve a posar sobre el bloc.
+// Saltar de noticia en noticia con degradado de tamaño y transparencia: al
+// avanzar, la tarjeta actual crece hasta 1,5x mientras se desvanece (viene
+// hacia ti) y su sombra se aleja; al retroceder, la anterior entra desde
+// 1,5x y aterriza con la sombra acercándose.
 //
 // Técnica: se clona la tarjeta como capa fija sobre su posición en pantalla,
-// se salta el scroll al destino al instante (la siguiente hoja ya está
-// debajo) y el clon se anima con rotateX sobre el borde superior. Así el
-// scroll real nunca se pelea con la animación.
+// se salta el scroll al destino al instante (la siguiente ya está debajo) y
+// el clon se anima encima. Así el scroll real nunca se pelea con la animación.
 
 // Separación entre el borde superior del viewport y la tarjeta al aterrizar.
 const READING_OFFSET = 78;
-const PEEL_MS = 400;
+const PEEL_MS = 450;
 
 function cards(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(".feed .card:not(.skeleton-card)")];

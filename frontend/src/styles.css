@@ -145,7 +145,7 @@ button.danger:hover:not(:disabled) {
 
 /* Acción principal de cada pantalla: ámbar sólido. */
 button[type="submit"],
-.feed-toolbar > button,
+.refresh-btn,
 .detected > button {
   background: var(--accent);
   border-color: var(--accent);
@@ -153,7 +153,7 @@ button[type="submit"],
   font-weight: 600;
 }
 button[type="submit"]:hover:not(:disabled),
-.feed-toolbar > button:hover:not(:disabled),
+.refresh-btn:hover:not(:disabled),
 .detected > button:hover:not(:disabled) {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
@@ -402,45 +402,52 @@ h3 {
   color: var(--text);
 }
 
-/* Al cambiar de noticia, la tarjeta actual se desliza suavemente hacia
-   arriba y se desvanece; al retroceder, entra bajando desde arriba. Capa
-   fija con un clon para que el scroll no pelee con la animación. */
+/* Al cambiar de noticia, la tarjeta que sale crece hasta 1,5x mientras se
+   hace transparente (viene hacia ti y desaparece) y su sombra se aleja,
+   grande y difusa; al retroceder, la anterior entra desde 1,5x y aterriza
+   con la sombra acercándose hasta la de reposo. Capa fija con un clon para
+   que el scroll no pelee con la animación. */
 .page-turn-layer {
   position: fixed;
   z-index: 60;
   pointer-events: none;
 }
 .page-turn-layer .card {
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.4);
-  will-change: transform, opacity;
+  will-change: transform, opacity, box-shadow;
 }
 
 @keyframes peel-out {
   0% {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
   }
   100% {
-    transform: translateY(-42px);
+    transform: scale(1.5);
     opacity: 0;
+    box-shadow: 0 60px 90px rgba(0, 0, 0, 0);
   }
 }
 .peel-out {
-  animation: peel-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: 50% 40%;
+  animation: peel-out 0.45s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 
 @keyframes peel-in {
   0% {
-    transform: translateY(-42px);
+    transform: scale(1.5);
     opacity: 0;
+    box-shadow: 0 60px 90px rgba(0, 0, 0, 0);
   }
   100% {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
   }
 }
 .peel-in {
-  animation: peel-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: 50% 40%;
+  animation: peel-in 0.45s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
 }
 
 /* Acceso directo cuando el informe termina y ya no estás en la tarjeta. */
@@ -697,20 +704,28 @@ h3 {
   padding: 1.1rem 1.2rem;
   margin-bottom: 1rem;
   overflow: hidden;
-  transition: border-color 0.15s, transform 0.15s;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 .feed .card:hover {
   border-color: var(--border-strong);
   transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 /* No leída: marco ámbar alrededor para distinguirla de un vistazo. Se marca
    sola al pasar la tarjeta entera, o a mano con el botón de la tarjeta. */
 .card.unread {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  /* Aro del marco + la misma sombra de profundidad del resto de tarjetas. */
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 2px 10px rgba(0, 0, 0, 0.22);
 }
 .feed .card.unread:hover {
   border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 6px 18px rgba(0, 0, 0, 0.28);
 }
 .card-image {
   display: block;
@@ -728,6 +743,27 @@ h3 {
   align-items: center;
   gap: 0.8rem;
   margin-bottom: 1.2rem;
+}
+.refresh-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.refresh-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.refresh-btn .spin {
+  animation: spin 1s linear infinite;
+}
+/* El toggle "Sin leer" vive a la derecha de la barrita. */
+.feed-toolbar .unread-chip {
+  margin-left: auto;
 }
 .feed-toolbar .muted {
   font-family: var(--font-sans);

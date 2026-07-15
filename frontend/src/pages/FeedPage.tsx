@@ -15,7 +15,9 @@ export default function FeedPage() {
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
   const [view, setView] = useState<View>("feed");
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  // El feed abre siempre enseñando solo lo pendiente; el toggle "Sin leer"
+  // (en la barrita, a la derecha) lo quita para ver también lo leído.
+  const [unreadOnly, setUnreadOnly] = useState(true);
 
   // Los chips se ordenan por uso (las más filtradas primero); el orden se
   // congela al montar para que no bailen bajo el dedo.
@@ -165,9 +167,24 @@ export default function FeedPage() {
       </div>
 
       <div className="feed-toolbar">
-        <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-          {refreshing && <span className="spinner" />}
-          {refreshing ? "Actualizando…" : "Actualizar"}
+        <button
+          className="refresh-btn"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Actualizar las noticias"
+        >
+          <svg
+            className={refreshing ? "spin" : ""}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 11a8 8 0 1 0-2.6 5.9" />
+            <path d="M20 5.5V11h-5.5" />
+          </svg>
         </button>
         {refreshing && (
           <span className="muted mobile-refreshing">
@@ -175,6 +192,13 @@ export default function FeedPage() {
           </span>
         )}
         {refreshMsg && <span className="muted">{refreshMsg}</span>}
+        <button
+          className={`chip unread-chip${unreadOnly ? " active" : ""}`}
+          title={unreadOnly ? "Mostrar también las leídas" : "Mostrar solo las noticias sin leer"}
+          onClick={() => setUnreadOnly(!unreadOnly)}
+        >
+          ● Sin leer
+        </button>
       </div>
 
       {orderedSources.length > 0 && (
@@ -184,13 +208,6 @@ export default function FeedPage() {
           </button>
           <button className={`chip${view === "all" ? " active" : ""}`} onClick={() => selectView("all")}>
             Todas
-          </button>
-          <button
-            className={`chip unread-chip${unreadOnly ? " active" : ""}`}
-            title="Mostrar solo las noticias sin leer"
-            onClick={() => setUnreadOnly(!unreadOnly)}
-          >
-            ● Sin leer
           </button>
           {orderedSources.map((s) => (
             <button
@@ -213,7 +230,9 @@ export default function FeedPage() {
       )}
       {error && <p className="error">{(error as Error).message}</p>}
       {!isLoading && articles.length === 0 && unreadOnly && (
-        <p className="muted">No queda nada sin leer por aquí. 🎉</p>
+        <p className="muted">
+          No queda nada sin leer. 🎉 Apaga <b>● Sin leer</b> (arriba a la derecha) para ver también las leídas.
+        </p>
       )}
       {!isLoading && articles.length === 0 && !unreadOnly && typeof view === "number" && (
         <p className="muted">No hay noticias de esta fuente en el feed.</p>
