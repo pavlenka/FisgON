@@ -9,7 +9,7 @@
 
 // Separación entre el borde superior del viewport y la tarjeta al aterrizar.
 const READING_OFFSET = 78;
-const PEEL_MS = 450;
+const PEEL_MS = 230;
 
 function cards(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(".feed .card:not(.skeleton-card)")];

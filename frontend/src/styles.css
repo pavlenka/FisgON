@@ -430,7 +430,7 @@ h3 {
 }
 .peel-out {
   transform-origin: 50% 40%;
-  animation: peel-out 0.45s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  animation: peel-out 0.22s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 
 @keyframes peel-in {
@@ -447,7 +447,7 @@ h3 {
 }
 .peel-in {
   transform-origin: 50% 40%;
-  animation: peel-in 0.45s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+  animation: peel-in 0.22s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
 }
 
 /* Acceso directo cuando el informe termina y ya no estás en la tarjeta. */
@@ -1188,6 +1188,18 @@ h3 {
   /* En móvil se refresca tirando hacia abajo desde arriba del todo. */
   .refresh-btn {
     display: none;
+  }
+  /* El toggle "Sin leer" se sube a la cabecera, junto al claro/oscuro,
+     para no gastar una línea entera. */
+  .feed-toolbar {
+    margin-bottom: 0.2rem;
+  }
+  .feed-toolbar .unread-chip {
+    position: fixed;
+    top: 13px;
+    right: calc(62px + env(safe-area-inset-right));
+    z-index: 11;
+    margin-left: 0;
   }
   .mobile-refreshing {
     display: inline-flex;
