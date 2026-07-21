@@ -94,6 +94,31 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // Al llegar al final del feed (sin más páginas y cerca del fondo real), se
+  // marcan como leídas todas las tarjetas cargadas: cada tick incrementa el
+  // contador que las tarjetas observan. Basado en scroll, no en el observer:
+  // este dispara aunque el sentinel ya estuviera visible. Se rearma cuando
+  // llegan más noticias.
+  const [markAllTick, setMarkAllTick] = useState(0);
+  const scrolledRef = useRef(false);
+  const endArmedRef = useRef(false);
+  useEffect(() => {
+    if (hasNextPage) endArmedRef.current = false;
+  }, [hasNextPage]);
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 80) scrolledRef.current = true;
+      const doc = document.documentElement;
+      const nearBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 200;
+      if (nearBottom && !hasNextPage && !isFetchingNextPage && scrolledRef.current && !endArmedRef.current) {
+        endArmedRef.current = true;
+        setMarkAllTick((t) => t + 1);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [hasNextPage, isFetchingNextPage]);
+
   async function handleRefresh() {
     if (refreshing) return;
     setRefreshing(true);
@@ -282,7 +307,7 @@ export default function FeedPage() {
                 <span>{dayLabel(a.published_at)}</span>
               </div>
             )}
-            <ArticleCard article={a} />
+            <ArticleCard article={a} markAllTick={markAllTick} />
           </Fragment>
         );
       })}

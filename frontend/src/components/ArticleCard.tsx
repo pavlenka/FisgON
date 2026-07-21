@@ -22,7 +22,7 @@ function timeAgo(iso: string): string {
   });
 }
 
-export default function ArticleCard({ article }: { article: Article }) {
+export default function ArticleCard({ article, markAllTick = 0 }: { article: Article; markAllTick?: number }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -64,6 +64,17 @@ export default function ArticleCard({ article }: { article: Article }) {
     return () => window.removeEventListener("scroll", onScroll);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Al llegar al final del feed, todas las tarjetas quedan leídas (las
+  // últimas nunca llegan a salir por arriba, así que el scroll no las marca).
+  useEffect(() => {
+    if (markAllTick > 0 && !readRef.current) {
+      setRead(true);
+      article.is_read = true;
+      queueMarkRead(article.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markAllTick]);
 
   function toggleRead() {
     const next = !read;
