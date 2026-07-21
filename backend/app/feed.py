@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, or_, update
+from sqlalchemy import and_, func, or_, update
 from sqlmodel import Session, select
 
 from . import ingest, llm, mailer, topics
@@ -86,6 +86,10 @@ def get_feed(
         .join(Source, Article.source_id == Source.id)
         .where(Source.user_id == user.id)
         .where(_VISIBLE)
+        # Antigüedad máxima por fuente: se ocultan las noticias cuya edad en
+        # días (juliana, en UTC) supera el límite de su fuente. Así lo viejo
+        # ya guardado también desaparece del feed, no solo deja de ingerirse.
+        .where(func.julianday("now") - func.julianday(Article.published_at) <= Source.max_age_days)
         .order_by(Article.published_at.desc(), Article.id.desc())
     )
     if source_id is not None:

@@ -87,6 +87,7 @@ class SourceCreate(BaseModel):
     feed_url: str
     name: str
     topics: str
+    max_age_days: int = 7
 
 
 class SourceUpdate(BaseModel):
@@ -97,6 +98,7 @@ class SourceUpdate(BaseModel):
     vetoed_topics: str | None = None
     active: bool | None = None
     in_feed: bool | None = None
+    max_age_days: int | None = None
 
 
 class SourceOut(BaseModel):
@@ -109,6 +111,8 @@ class SourceOut(BaseModel):
     active: bool
     # Si la fuente entra en el feed inicial (chip "Feed").
     in_feed: bool
+    # Antigüedad máxima (días) que se muestra de esta fuente.
+    max_age_days: int
     # Veces que se ha filtrado el feed por esta fuente (ordena los chips).
     filter_count: int
     last_fetched_at: datetime | None

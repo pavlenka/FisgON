@@ -57,6 +57,9 @@ class Source(SQLModel, table=True):
     # Si la fuente aparece en el feed inicial ("Feed"); con el chip "Todas"
     # se ven también las excluidas.
     in_feed: bool = True
+    # Antigüedad máxima (días): las noticias más viejas ni se ingieren ni se
+    # muestran en el feed (las ya guardadas más viejas quedan ocultas).
+    max_age_days: int = 7
     # Veces que el usuario ha filtrado el feed por esta fuente: las más
     # filtradas aparecen primero en los chips del feed.
     filter_count: int = 0

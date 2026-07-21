@@ -96,6 +96,8 @@ export interface Source {
   active: boolean;
   // Si la fuente entra en el feed inicial (chip "Feed").
   in_feed: boolean;
+  // Antigüedad máxima (días) que se muestra de esta fuente.
+  max_age_days: number;
   // Veces que se ha filtrado el feed por esta fuente (ordena los chips).
   filter_count: number;
   last_fetched_at: string | null;
@@ -262,6 +264,7 @@ export const api = {
     feed_url: string;
     name: string;
     topics: string;
+    max_age_days: number;
   }) => apiFetch("/sources", { method: "POST", body: JSON.stringify(s) }) as Promise<Source>,
   updateSource: (
     id: number,
@@ -273,6 +276,7 @@ export const api = {
       vetoed_topics: string;
       active: boolean;
       in_feed: boolean;
+      max_age_days: number;
     }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),

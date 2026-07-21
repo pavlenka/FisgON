@@ -46,6 +46,8 @@ def init_db() -> None:
             conn.execute(text("ALTER TABLE source ADD COLUMN filter_count INTEGER NOT NULL DEFAULT 0"))
         if "in_feed" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN in_feed BOOLEAN NOT NULL DEFAULT 1"))
+        if "max_age_days" not in source_cols:
+            conn.execute(text("ALTER TABLE source ADD COLUMN max_age_days INTEGER NOT NULL DEFAULT 7"))
         article_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(article)"))}
         if "topic" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))
