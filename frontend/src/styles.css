@@ -696,6 +696,40 @@ h3 {
   margin-bottom: 0;
 }
 
+/* ---------- Separador de día ---------- */
+/* Aparece al cambiar de día bajando por el feed. Es sticky: mientras lees
+   las noticias de ese día se queda pegado bajo la cabecera, así siempre
+   sabes en qué día estás. */
+.day-divider {
+  position: sticky;
+  top: 4rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0.2rem 0 1rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.day-divider::before,
+.day-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.day-divider span {
+  color: var(--accent);
+  background: var(--bg-glass);
+  backdrop-filter: blur(6px);
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ---------- Fichas ---------- */
 .card {
   background: var(--bg-card);

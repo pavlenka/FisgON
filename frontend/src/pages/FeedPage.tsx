@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type Article } from "../api";
 import { turnPage } from "../pageTurn";
@@ -8,6 +8,33 @@ import SkeletonCard from "../components/SkeletonCard";
 // Vista del feed: "feed" = fuentes marcadas para el feed inicial,
 // "all" = todas las fuentes, número = una fuente concreta.
 type View = "feed" | "all" | number;
+
+// Fechas del backend: UTC naive (sin zona); las tratamos como UTC.
+function toLocalDate(iso: string): Date {
+  return new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + "Z");
+}
+function sameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+// Clave de día para detectar el cambio entre tarjetas consecutivas.
+function dayKey(iso: string): string {
+  const d = toLocalDate(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+// Etiqueta legible del separador: Hoy / Ayer / "lunes, 21 de julio".
+function dayLabel(iso: string): string {
+  const d = toLocalDate(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  if (sameDay(d, today)) return "Hoy";
+  if (sameDay(d, yesterday)) return "Ayer";
+  const opts: Intl.DateTimeFormatOptions =
+    d.getFullYear() === today.getFullYear()
+      ? { weekday: "long", day: "numeric", month: "long" }
+      : { day: "numeric", month: "long", year: "numeric" };
+  return d.toLocaleDateString("es-ES", opts);
+}
 
 export default function FeedPage() {
   const queryClient = useQueryClient();
@@ -243,9 +270,22 @@ export default function FeedPage() {
         </p>
       )}
 
-      {articles.map((a) => (
-        <ArticleCard key={a.id} article={a} />
-      ))}
+      {articles.map((a, i) => {
+        // Separador cuando cambia el día respecto a la tarjeta anterior
+        // (incluida la primera, para saber de qué día es la cabeza del feed).
+        const prev = articles[i - 1];
+        const newDay = !prev || dayKey(prev.published_at) !== dayKey(a.published_at);
+        return (
+          <Fragment key={a.id}>
+            {newDay && (
+              <div className="day-divider">
+                <span>{dayLabel(a.published_at)}</span>
+              </div>
+            )}
+            <ArticleCard article={a} />
+          </Fragment>
+        );
+      })}
 
       <div ref={sentinel} />
       {isFetchingNextPage && <SkeletonCard />}
