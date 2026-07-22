@@ -10,7 +10,7 @@ from sqlmodel import Session, select
 from . import mailer
 from .auth import get_current_admin
 from .db import get_session
-from .models import ApiCallLog, Article, InviteToken, Source, User, utcnow
+from .models import ApiCallLog, Article, Contact, InviteToken, Source, User, utcnow
 from .schemas import (
     ApiCallLogOut,
     ApiCallLogPage,
@@ -65,6 +65,7 @@ def delete_user(
         session.exec(delete(Article).where(Article.source_id.in_(source_ids)))
         session.exec(delete(Source).where(Source.id.in_(source_ids)))
     session.exec(delete(ApiCallLog).where(ApiCallLog.user_id == user_id))
+    session.exec(delete(Contact).where(Contact.user_id == user_id))
     session.delete(user)
     session.commit()
 

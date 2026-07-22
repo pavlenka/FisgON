@@ -9,6 +9,7 @@ import SourcesPage from "./pages/SourcesPage";
 import AnalyzedPage from "./pages/AnalyzedPage";
 import DashboardPage from "./pages/DashboardPage";
 import AccountPage from "./pages/AccountPage";
+import ContactsPage from "./pages/ContactsPage";
 import VerifyPage from "./pages/VerifyPage";
 import ResetPage from "./pages/ResetPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -49,6 +50,12 @@ const ICONS = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="8.5" r="3.5" />
       <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+    </svg>
+  ),
+  contacts: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 18a5.5 5.5 0 0 1 11 0M16 7h5M18.5 4.5v5" />
     </svg>
   ),
   logout: (
@@ -93,6 +100,10 @@ function Shell() {
             <NavLink to="/fuentes">
               {ICONS.sources}
               Fuentes
+            </NavLink>
+            <NavLink to="/contactos">
+              {ICONS.contacts}
+              Contactos
             </NavLink>
             <NavLink to="/analizadas">
               {ICONS.analyzed}
@@ -140,6 +151,7 @@ function Shell() {
             <Route path="/" element={<FeedPage />} />
             <Route path="/favoritas" element={<FavoritesPage />} />
             <Route path="/fuentes" element={<SourcesPage />} />
+            <Route path="/contactos" element={<ContactsPage />} />
             <Route path="/analizadas" element={<AnalyzedPage />} />
             <Route path="/dashboard" element={user?.is_admin ? <DashboardPage /> : <Navigate to="/" replace />} />
             <Route path="/cuenta" element={<AccountPage />} />
@@ -161,6 +173,10 @@ function Shell() {
         <NavLink to="/fuentes">
           {ICONS.sources}
           <span>Fuentes</span>
+        </NavLink>
+        <NavLink to="/contactos">
+          {ICONS.contacts}
+          <span>Contactos</span>
         </NavLink>
         <NavLink to="/analizadas">
           {ICONS.analyzed}

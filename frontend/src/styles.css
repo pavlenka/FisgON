@@ -173,7 +173,8 @@ button[type="submit"]:hover:not(:disabled),
   color: var(--accent-hover);
 }
 
-input {
+input,
+select {
   font-family: var(--font-sans);
   font-size: 0.9rem;
   background: var(--bg-input);
@@ -187,7 +188,8 @@ input::placeholder {
   color: var(--muted);
   opacity: 0.7;
 }
-input:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
@@ -972,6 +974,28 @@ h3 {
 .ask-form input {
   flex: 1;
 }
+.share-people {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.2rem 0 0.7rem;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+}
+.share-people a {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+.share-people a:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 /* ---------- Fuentes ---------- */
 .add-source .row {
@@ -1038,6 +1062,46 @@ h3 {
 .source-edit .row {
   display: flex;
   gap: 0.6rem;
+}
+
+/* ---------- Contactos ---------- */
+.contact-form {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 1.4fr;
+  gap: 0.7rem;
+  align-items: end;
+}
+.contact-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.contact-form .row,
+.contact-form .error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.contact-form .row,
+.contact-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.contact-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.contact-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.contact-item .muted {
+  font-size: 0.78rem;
 }
 
 /* ---------- Dashboard ---------- */
@@ -1242,6 +1306,17 @@ h3 {
   }
   .ready-pill {
     bottom: calc(4.6rem + env(safe-area-inset-bottom));
+  }
+  .contact-form {
+    grid-template-columns: 1fr;
+  }
+  .contact-form .row,
+  .contact-form .error {
+    grid-column: auto;
+  }
+  .contact-item {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

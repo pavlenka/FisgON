@@ -67,6 +67,17 @@ class Source(SQLModel, table=True):
     last_fetched_at: datetime | None = None
 
 
+class Contact(SQLModel, table=True):
+    """Persona a la que el usuario comparte noticias y su canal preferido."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True, foreign_key="user.id")
+    name: str
+    channel: str
+    destination: str
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class Article(SQLModel, table=True):
     """Noticia ya procesada por la IA. Se guardan todas (también las descartadas)
     para no reprocesarlas; el feed filtra por on_topic + umbral."""

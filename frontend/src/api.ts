@@ -110,6 +110,15 @@ export interface DetectResult {
   suggested_topics: string;
 }
 
+export type ContactChannel = "email" | "whatsapp" | "telegram";
+
+export interface Contact {
+  id: number;
+  name: string;
+  channel: ContactChannel;
+  destination: string;
+}
+
 export interface Article {
   id: number;
   source_id: number;
@@ -280,6 +289,12 @@ export const api = {
     }>
   ) => apiFetch(`/sources/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Source>,
   deleteSource: (id: number) => apiFetch(`/sources/${id}`, { method: "DELETE" }),
+  listContacts: () => apiFetch("/contacts") as Promise<Contact[]>,
+  createContact: (contact: Omit<Contact, "id">) =>
+    apiFetch("/contacts", { method: "POST", body: JSON.stringify(contact) }) as Promise<Contact>,
+  updateContact: (id: number, patch: Partial<Omit<Contact, "id">>) =>
+    apiFetch(`/contacts/${id}`, { method: "PATCH", body: JSON.stringify(patch) }) as Promise<Contact>,
+  deleteContact: (id: number) => apiFetch(`/contacts/${id}`, { method: "DELETE" }),
   refresh: () => apiFetch("/sources/refresh", { method: "POST" }),
   refreshStatus: () => apiFetch("/sources/refresh/status") as Promise<RefreshStatus>,
   getFeed: (cursor?: string | null, opts?: { sourceId?: number | null; all?: boolean; unreadOnly?: boolean }) =>

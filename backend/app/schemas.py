@@ -1,5 +1,6 @@
 """Esquemas Pydantic para las peticiones y respuestas de la API."""
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -116,6 +117,25 @@ class SourceOut(BaseModel):
     # Veces que se ha filtrado el feed por esta fuente (ordena los chips).
     filter_count: int
     last_fetched_at: datetime | None
+
+
+class ContactCreate(BaseModel):
+    name: str
+    channel: Literal["email", "whatsapp", "telegram"]
+    destination: str
+
+
+class ContactUpdate(BaseModel):
+    name: str | None = None
+    channel: Literal["email", "whatsapp", "telegram"] | None = None
+    destination: str | None = None
+
+
+class ContactOut(BaseModel):
+    id: int
+    name: str
+    channel: Literal["email", "whatsapp", "telegram"]
+    destination: str
 
 
 class ArticleOut(BaseModel):
