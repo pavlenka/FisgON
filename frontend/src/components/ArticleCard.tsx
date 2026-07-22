@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { api, queueMarkRead, type Article, type Contact } from "../api";
+import { api, queueMarkRead, type Article } from "../api";
 import { useAuth } from "../auth";
 
 // Las fechas del backend son UTC naive (sin zona); las tratamos como UTC.
@@ -23,17 +23,6 @@ function timeAgo(iso: string): string {
   });
 }
 
-function shareUrl(contact: Contact, article: Article): string {
-  const text = `${article.title}\n\n${article.summary}\n\n${article.link}`;
-  if (contact.channel === "email") {
-    return `mailto:${contact.destination}?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(text)}`;
-  }
-  if (contact.channel === "whatsapp") {
-    return `https://wa.me/${contact.destination}?text=${encodeURIComponent(text)}`;
-  }
-  return `https://t.me/${encodeURIComponent(contact.destination)}?text=${encodeURIComponent(text)}`;
-}
-
 export default function ArticleCard({ article, markAllTick = 0 }: { article: Article; markAllTick?: number }) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -48,11 +37,21 @@ export default function ArticleCard({ article, markAllTick = 0 }: { article: Art
   const [gallery, setGallery] = useState<string[]>(article.extra_images);
   const [read, setRead] = useState(article.is_read);
   const [error, setError] = useState<string | null>(null);
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const { data: contacts, isLoading: contactsLoading } = useQuery({
     queryKey: ["contacts"],
     queryFn: api.listContacts,
     enabled: sharing,
+  });
+  const shareMut = useMutation({
+    mutationFn: (contactId: number) => api.shareArticle(article.id, contactId),
+    onSuccess: (res) => {
+      setError(null);
+      setEmailMsg(res.message);
+      setSharing(false);
+    },
+    onError: (e: Error) => setError(e.message),
   });
 
   // Al pasar la tarjeta entera (su borde inferior sale por arriba de la
@@ -165,7 +164,6 @@ export default function ArticleCard({ article, markAllTick = 0 }: { article: Art
     onError: (e: Error) => setError(e.message),
   });
 
-  const [emailMsg, setEmailMsg] = useState<string | null>(null);
   const emailMut = useMutation({
     mutationFn: () => api.emailArticle(article.id),
     onSuccess: async (res) => {
@@ -307,15 +305,13 @@ export default function ArticleCard({ article, markAllTick = 0 }: { article: Art
         <div className="share-people">
           {contactsLoading && <span className="muted">Cargando…</span>}
           {contacts?.map((contact) => (
-            <a
+            <button
               key={contact.id}
-              href={shareUrl(contact, article)}
-              target={contact.channel === "email" ? undefined : "_blank"}
-              rel="noreferrer"
-              onClick={() => setSharing(false)}
+              disabled={shareMut.isPending || !contact.email}
+              onClick={() => shareMut.mutate(contact.id)}
             >
-              {contact.name}
-            </a>
+              {shareMut.isPending && shareMut.variables === contact.id ? "Enviando…" : contact.name}
+            </button>
           ))}
           {contacts?.length === 0 && <Link to="/contactos">Añade contactos para compartir</Link>}
         </div>

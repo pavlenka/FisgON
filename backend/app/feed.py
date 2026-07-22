@@ -11,7 +11,7 @@ from . import ingest, llm, mailer, topics
 from .auth import get_current_user
 from .config import settings
 from .db import get_session
-from .models import Article, Source, User
+from .models import Article, Contact, Source, User
 from .schemas import (
     AnalyzedArticleOut,
     AnalyzedArticlePage,
@@ -425,6 +425,60 @@ def email_article(
     if not sent:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar el correo, inténtalo de nuevo")
     return Message(message=f"Enviada a {user.email}")
+
+
+@router.post("/articles/{article_id}/share/{contact_id}", response_model=Message)
+def share_article(
+    article_id: int,
+    contact_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Message:
+    row = session.exec(
+        select(Article, Source)
+        .join(Source, Article.source_id == Source.id)
+        .where(Article.id == article_id, Source.user_id == user.id)
+    ).first()
+    contact = session.get(Contact, contact_id)
+    if row is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Noticia no encontrada")
+    if contact is None or contact.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contacto no encontrado")
+    if not contact.email:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Este contacto no tiene correo. Edítalo antes de compartir.",
+        )
+    article, source = row
+
+    if user.pref_email_extended and not article.extended_summary:
+        article_data = ingest.extract_article(article.link)
+        article.extended_summary = llm.expand_summary(
+            source.topics,
+            article.original_title,
+            article_data["text"],
+            session=session,
+            user_id=user.id,
+            source_id=source.id,
+            article_id=article.id,
+        )
+        session.add(article)
+        session.commit()
+
+    sent = mailer.send_article(
+        contact.email,
+        source_name=source.name,
+        title=article.title,
+        summary=article.summary,
+        extended_summary=article.extended_summary,
+        link=article.link,
+        published_at=article.published_at,
+        image_url=article.image_url,
+        shared_by=user.name,
+    )
+    if not sent:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo enviar el correo, inténtalo de nuevo")
+    return Message(message=f"Enviada a {contact.name}")
 
 
 @router.post("/articles/{article_id}/ask", response_model=AskResponse)

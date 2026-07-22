@@ -68,13 +68,14 @@ class Source(SQLModel, table=True):
 
 
 class Contact(SQLModel, table=True):
-    """Persona a la que el usuario comparte noticias y su canal preferido."""
+    """Persona a la que el usuario puede enviar noticias por correo."""
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(index=True, foreign_key="user.id")
     name: str
-    channel: str
-    destination: str
+    email: str = ""
+    channel: str = "email"
+    destination: str = ""
     created_at: datetime = Field(default_factory=utcnow)
 
 

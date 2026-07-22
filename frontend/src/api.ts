@@ -110,13 +110,10 @@ export interface DetectResult {
   suggested_topics: string;
 }
 
-export type ContactChannel = "email" | "whatsapp" | "telegram";
-
 export interface Contact {
   id: number;
   name: string;
-  channel: ContactChannel;
-  destination: string;
+  email: string;
 }
 
 export interface Article {
@@ -318,6 +315,8 @@ export const api = {
     }>,
   emailArticle: (id: number) =>
     apiFetch(`/articles/${id}/email`, { method: "POST" }) as Promise<{ message: string }>,
+  shareArticle: (articleId: number, contactId: number) =>
+    apiFetch(`/articles/${articleId}/share/${contactId}`, { method: "POST" }) as Promise<{ message: string }>,
   getAnalyzedArticles: (cursor?: string | null) =>
     apiFetch(
       `/articles/analyzed?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`

@@ -48,6 +48,10 @@ def init_db() -> None:
             conn.execute(text("ALTER TABLE source ADD COLUMN in_feed BOOLEAN NOT NULL DEFAULT 1"))
         if "max_age_days" not in source_cols:
             conn.execute(text("ALTER TABLE source ADD COLUMN max_age_days INTEGER NOT NULL DEFAULT 7"))
+        contact_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(contact)"))}
+        if contact_cols and "email" not in contact_cols:
+            conn.execute(text("ALTER TABLE contact ADD COLUMN email TEXT NOT NULL DEFAULT ''"))
+            conn.execute(text("UPDATE contact SET email = destination WHERE channel = 'email'"))
         article_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(article)"))}
         if "topic" not in article_cols:
             conn.execute(text("ALTER TABLE article ADD COLUMN topic TEXT"))

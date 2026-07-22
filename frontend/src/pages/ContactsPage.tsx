@@ -1,20 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type Contact, type ContactChannel } from "../api";
-
-const CHANNEL_LABELS: Record<ContactChannel, string> = {
-  email: "Correo",
-  whatsapp: "WhatsApp",
-  telegram: "Telegram",
-};
+import { api, type Contact } from "../api";
 
 interface ContactForm {
   name: string;
-  channel: ContactChannel;
-  destination: string;
+  email: string;
 }
 
-const EMPTY_FORM: ContactForm = { name: "", channel: "whatsapp", destination: "" };
+const EMPTY_FORM: ContactForm = { name: "", email: "" };
 
 export default function ContactsPage() {
   const queryClient = useQueryClient();
@@ -49,23 +42,16 @@ export default function ContactsPage() {
 
   function startEdit(contact: Contact) {
     setEditing(contact);
-    setForm({ name: contact.name, channel: contact.channel, destination: contact.destination });
+    setForm({ name: contact.name, email: contact.email });
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
-
-  const destinationLabel =
-    form.channel === "email"
-      ? "Correo electrónico"
-      : form.channel === "whatsapp"
-        ? "Teléfono con prefijo internacional"
-        : "Usuario de Telegram";
 
   return (
     <div className="contacts">
       <section className="card add-contact">
         <h2>{editing ? "Editar contacto" : "Añadir contacto"}</h2>
-        <p className="muted">Configura una persona y el canal que quieres usar para compartir noticias.</p>
+        <p className="muted">Guarda las personas a las que quieres enviar noticias por correo.</p>
         <form className="contact-form" onSubmit={submit}>
           <label>
             Nombre
@@ -76,27 +62,17 @@ export default function ContactsPage() {
             />
           </label>
           <label>
-            Canal
-            <select
-              value={form.channel}
-              onChange={(e) => setForm({ ...form, channel: e.target.value as ContactChannel, destination: "" })}
-            >
-              <option value="whatsapp">WhatsApp</option>
-              <option value="email">Correo</option>
-              <option value="telegram">Telegram</option>
-            </select>
-          </label>
-          <label>
-            {destinationLabel}
+            Correo electrónico
             <input
-              value={form.destination}
-              placeholder={form.channel === "email" ? "ana@ejemplo.com" : form.channel === "whatsapp" ? "+34600000000" : "@ana"}
-              onChange={(e) => setForm({ ...form, destination: e.target.value })}
+              type="email"
+              value={form.email}
+              placeholder="ana@ejemplo.com"
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </label>
           {error && <p className="error">{error}</p>}
           <div className="row">
-            <button disabled={!form.name.trim() || !form.destination.trim() || saveMut.isPending}>
+            <button disabled={!form.name.trim() || !form.email.trim() || saveMut.isPending}>
               {saveMut.isPending ? "Guardando…" : editing ? "Guardar cambios" : "Añadir contacto"}
             </button>
             {editing && (
@@ -123,9 +99,7 @@ export default function ContactsPage() {
           <div className="card contact-item" key={contact.id}>
             <div>
               <div className="contact-name">{contact.name}</div>
-              <div className="muted">
-                {CHANNEL_LABELS[contact.channel]} · {contact.destination}
-              </div>
+              <div className="muted">{contact.email || "Falta el correo: edita este contacto"}</div>
             </div>
             <div className="contact-actions">
               <button onClick={() => startEdit(contact)}>Editar</button>

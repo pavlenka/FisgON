@@ -12,23 +12,10 @@ from .schemas import ContactCreate, ContactOut, ContactUpdate
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 
-def _validate_destination(channel: str, destination: str) -> str:
-    value = destination.strip()
-    if not value:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Indica un correo, teléfono o usuario")
-    if channel == "email" and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
+def _validate_email(email: str) -> str:
+    value = email.strip().lower()
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", value):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El correo no es válido")
-    if channel == "whatsapp":
-        value = re.sub(r"[\s()+.-]", "", value)
-        if not value.isdigit() or len(value) < 7 or len(value) > 15:
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST,
-                "Usa el teléfono de WhatsApp con prefijo internacional",
-            )
-    if channel == "telegram":
-        value = value.removeprefix("@").strip()
-        if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", value):
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "El usuario de Telegram no es válido")
     return value
 
 
@@ -61,8 +48,7 @@ def create_contact(
     contact = Contact(
         user_id=user.id,
         name=name,
-        channel=data.channel,
-        destination=_validate_destination(data.channel, data.destination),
+        email=_validate_email(data.email),
     )
     session.add(contact)
     session.commit()
@@ -82,10 +68,8 @@ def update_contact(
         if not data.name.strip():
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "El nombre no puede estar vacío")
         contact.name = data.name.strip()
-    channel = data.channel or contact.channel
-    destination = data.destination if data.destination is not None else contact.destination
-    contact.channel = channel
-    contact.destination = _validate_destination(channel, destination)
+    if data.email is not None:
+        contact.email = _validate_email(data.email)
     session.add(contact)
     session.commit()
     session.refresh(contact)

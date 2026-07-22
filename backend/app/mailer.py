@@ -116,11 +116,13 @@ def send_article(
     link: str,
     published_at: datetime,
     image_url: str | None,
+    shared_by: str | None = None,
 ) -> bool:
     """Envía una noticia al correo del usuario (tema claro: negro sobre blanco)."""
     fecha = f"{published_at.day} {_MESES[published_at.month - 1]} {published_at.year}"
 
-    plain = f"{source_name} · {fecha}\n\n{title}\n\n{summary}\n"
+    plain = f"{shared_by} quiere compartir esto contigo\n\n" if shared_by else ""
+    plain += f"{source_name} · {fecha}\n\n{title}\n\n{summary}\n"
     if extended_summary:
         plain += f"\nINFORME COMPLETO\n\n{extended_summary}\n"
     plain += f"\nLeer en la fuente: {link}\n\n— Enviado desde FisgON ({settings.app_base_url})"
@@ -148,10 +150,17 @@ def send_article(
         if image_url
         else ""
     )
+    shared_html = (
+        f'<p style="margin:0 0 16px;color:#1a1510;font-size:17px;font-weight:600;">'
+        f"{esc(shared_by)} quiere compartir esto contigo</p>"
+        if shared_by
+        else ""
+    )
 
     html = f"""\
 <div style="background:#f5f3ef;padding:24px 12px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <div style="max-width:600px;margin:0 auto;">
+    {shared_html}
     <div style="background:#0e0c08;padding:10px 16px;border-radius:4px;display:inline-block;margin-bottom:14px;">
       <span style="font-size:20px;font-weight:800;color:#efe6d8;">Fisg<span style="color:#e9a13b;">ON</span></span>
     </div>

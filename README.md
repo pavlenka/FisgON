@@ -64,8 +64,8 @@ Si el backend corre en otro puerto: `VITE_API_PROXY=http://localhost:8010 npm ru
 3. Pulsa **Actualizar** en **Noticias** para que descargue y procese las últimas noticias.
    El primer procesado tarda un poco (el modelo analiza cada artículo).
 4. Lee el feed: títulos y resúmenes claros, orden descendente por hora, scroll infinito.
-5. En **Contactos**, guarda personas con su correo, WhatsApp o Telegram. El botón
-   **Compartir** de cada noticia muestra solo sus nombres y abre el canal configurado.
+5. En **Contactos**, guarda personas con su correo. El botón **Compartir** de cada
+   noticia muestra solo sus nombres y les envía directamente la noticia por email.
 
 ## Configuración (backend/.env)
 

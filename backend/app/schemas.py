@@ -1,6 +1,5 @@
 """Esquemas Pydantic para las peticiones y respuestas de la API."""
 from datetime import datetime
-from typing import Literal
 
 from pydantic import BaseModel
 
@@ -121,21 +120,18 @@ class SourceOut(BaseModel):
 
 class ContactCreate(BaseModel):
     name: str
-    channel: Literal["email", "whatsapp", "telegram"]
-    destination: str
+    email: str
 
 
 class ContactUpdate(BaseModel):
     name: str | None = None
-    channel: Literal["email", "whatsapp", "telegram"] | None = None
-    destination: str | None = None
+    email: str | None = None
 
 
 class ContactOut(BaseModel):
     id: int
     name: str
-    channel: Literal["email", "whatsapp", "telegram"]
-    destination: str
+    email: str
 
 
 class ArticleOut(BaseModel):
